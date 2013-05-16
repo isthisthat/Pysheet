@@ -223,7 +223,7 @@ Output:
 
 So there are 1925 such cases. This additional information appears because we used the `--verbose`/`-v` argument.
 
->__TIP__: the number to the left of "INFO" (here "1234") is the process ID of this instance of pysheet. This information is useful when running multiple instances of pysheet in parallel (see `-L` option).
+>__TIP__: the number to the left of _INFO_ (here _1234_) is the process ID of this instance of pysheet. This information is useful when running multiple instances of pysheet in parallel (see `-L` option).
 
 Let's say we are interested in genes involved in _Acute Myeloid Leukemia_ or _AML_. Let's now see the cases which contain _AML_ in the _Phenotype_ column which we created previously:
 
@@ -251,7 +251,7 @@ We get 19 such genes:
     RUNX1
     SBDS
 
-Let's now say we wish to exclude gene _HOXA13_ because we think it's irrelevant. We'll use the special _\_\_Exclude_ column for that. Let's use the `--write`/`-w` argument to the entry _yes_ under the _\_\_Exclude_ column of our spreadsheet.
+Let's now say we wish to exclude gene _HOXA13_ because we think it's irrelevant. We'll use the special ___Exclude_ column for that. Let's use the `--write`/`-w` argument to the entry _yes_ under the ___Exclude_ column of our spreadsheet.
 
     ./pysheet.py -d cancer_zebrafish.csv -w HOXA13 __Exclude yes -o cancer_zebrafish.csv
 
@@ -408,7 +408,7 @@ Generated using:
     from pysheet import Pysheet
     pydoc.writedoc(Pysheet)
 
-Available at [Pysheet.html](https://github.com/isthisthat/Pysheet/Pysheet.html)
+Available at [Pysheet.html](http://htmlpreview.github.io/?https://github.com/isthisthat/Pysheet/blob/master/Pysheet.html)
 
 ## TODO
 * Allow indexing by more than one column (e.g. chromosome\_position\_allele)
