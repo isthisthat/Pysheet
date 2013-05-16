@@ -1,0 +1,140 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: class Pysheet</title>
+</head><body bgcolor="#f0f0f8">
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Pysheet">class <strong>Pysheet</strong></a></font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Pysheet&nbsp;-&nbsp;A&nbsp;library&nbsp;to&nbsp;read,&nbsp;write&nbsp;and&nbsp;manipulate&nbsp;spreadsheets<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="Pysheet-__add__"><strong>__add__</strong></a>(self, other, mergeHeaders<font color="#909090">=False</font>)</dt><dd><tt>merges&nbsp;two&nbsp;Pysheets&nbsp;together</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-__delitem__"><strong>__delitem__</strong></a>(self, key)</dt><dd><tt>deletes&nbsp;a&nbsp;row&nbsp;from&nbsp;the&nbsp;dictionary</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-__getitem__"><strong>__getitem__</strong></a>(self, key, default<font color="#909090">=None</font>)</dt><dd><tt>gets&nbsp;the&nbsp;row&nbsp;of&nbsp;an&nbsp;ID&nbsp;from&nbsp;the&nbsp;dictionary</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-__init__"><strong>__init__</strong></a>(self, filename<font color="#909090">=None</font>, delimiter<font color="#909090">=','</font>, iterable<font color="#909090">=None</font>, idColumn<font color="#909090">=None</font>)</dt><dd><tt>initializes&nbsp;the&nbsp;object&nbsp;and&nbsp;reads&nbsp;in&nbsp;a&nbsp;sheet&nbsp;from&nbsp;a&nbsp;file&nbsp;or&nbsp;an&nbsp;iterable.<br>
+Optionally&nbsp;specify&nbsp;the&nbsp;column&nbsp;number&nbsp;that&nbsp;contains&nbsp;the&nbsp;unique&nbsp;IDs&nbsp;(starting&nbsp;from&nbsp;0)</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-__iter__"><strong>__iter__</strong></a>(self)</dt><dd><tt>returns&nbsp;an&nbsp;iterator&nbsp;over&nbsp;the&nbsp;ID:row&nbsp;items&nbsp;in&nbsp;the&nbsp;csv</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-__len__"><strong>__len__</strong></a>(self)</dt><dd><tt>returns&nbsp;the&nbsp;length&nbsp;of&nbsp;the&nbsp;header&nbsp;row&nbsp;in&nbsp;the&nbsp;dictionary</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-__setitem__"><strong>__setitem__</strong></a>(self, key, row)</dt><dd><tt>changes&nbsp;the&nbsp;row&nbsp;of&nbsp;an&nbsp;ID&nbsp;in&nbsp;the&nbsp;dictionary</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-__str__"><strong>__str__</strong></a>(self)</dt><dd><tt>returns&nbsp;a&nbsp;string&nbsp;representation&nbsp;of&nbsp;this&nbsp;object</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-addCell"><strong>addCell</strong></a>(self, key, header<font color="#909090">=None</font>, value<font color="#909090">=None</font>, mode<font color="#909090">='overwrite'</font>)</dt><dd><tt>adds&nbsp;a&nbsp;single&nbsp;cell&nbsp;in&nbsp;the&nbsp;dictionary.&nbsp;mode&nbsp;can&nbsp;be&nbsp;'smart_append'<br>
+(adds&nbsp;a&nbsp;value&nbsp;if&nbsp;not&nbsp;already&nbsp;present),&nbsp;'append',&nbsp;'overwrite'&nbsp;and<br>
+'add'&nbsp;(performs&nbsp;plus&nbsp;operation&nbsp;if&nbsp;values&nbsp;are&nbsp;numeric)</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-consolidate"><strong>consolidate</strong></a>(self, consolidations, cleanUp<font color="#909090">=False</font>, mode<font color="#909090">='smart_append'</font>)</dt><dd><tt>consolidates&nbsp;columns&nbsp;according&nbsp;to&nbsp;keywords.&nbsp;consolidations&nbsp;is&nbsp;a&nbsp;2D&nbsp;list&nbsp;of&nbsp;[[header,&nbsp;keyword,&nbsp;keyword,&nbsp;...],&nbsp;...]<br>
+Use&nbsp;cleanUp=True&nbsp;to&nbsp;delete&nbsp;the&nbsp;consolidated&nbsp;columns&nbsp;after&nbsp;consolidation<br>
+mode&nbsp;is&nbsp;one&nbsp;of:&nbsp;'smart_append'&nbsp;(appends&nbsp;new&nbsp;value&nbsp;if&nbsp;not&nbsp;already&nbsp;present),&nbsp;'append',&nbsp;'overwrite'&nbsp;and&nbsp;'add'&nbsp;(adds&nbsp;up&nbsp;values&nbsp;if&nbsp;numeric)</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-containsColumn"><strong>containsColumn</strong></a>(self, header)</dt><dd><tt>True&nbsp;if&nbsp;header&nbsp;exists&nbsp;in&nbsp;the&nbsp;csv&nbsp;header&nbsp;list</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-contract"><strong>contract</strong></a>(self, mode<font color="#909090">='overwrite'</font>)</dt><dd><tt>concatenates&nbsp;columns&nbsp;that&nbsp;have&nbsp;the&nbsp;same&nbsp;header.&nbsp;mode&nbsp;can&nbsp;be:<br>
+'append',&nbsp;'overwrite',&nbsp;'smart_append'&nbsp;(consolidates&nbsp;values&nbsp;if&nbsp;not&nbsp;already&nbsp;present)<br>
+or&nbsp;'add'&nbsp;(performs&nbsp;plus&nbsp;operation&nbsp;for&nbsp;numeric&nbsp;values)</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-excluded"><strong>excluded</strong></a>(self, key)</dt><dd><tt>returns&nbsp;True&nbsp;if&nbsp;an&nbsp;item's&nbsp;exclusion&nbsp;header&nbsp;is&nbsp;non-blank</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-expand"><strong>expand</strong></a>(self)</dt><dd><tt>blank-pads&nbsp;to&nbsp;make&nbsp;all&nbsp;rows&nbsp;as&nbsp;long&nbsp;as&nbsp;the&nbsp;headers</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-get"><strong>get</strong></a>(self, key, default<font color="#909090">=None</font>)</dt><dd><tt>gets&nbsp;the&nbsp;row&nbsp;of&nbsp;an&nbsp;ID&nbsp;from&nbsp;the&nbsp;dictionary</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-getColumns"><strong>getColumns</strong></a>(self, cols<font color="#909090">=None</font>, blanks<font color="#909090">=False</font>, exclude<font color="#909090">=True</font>)</dt><dd><tt>extracts&nbsp;columns&nbsp;and&nbsp;corresponding&nbsp;IDs&nbsp;from&nbsp;the&nbsp;dictionary&nbsp;(with&nbsp;column&nbsp;headers)<br>
+returns&nbsp;requested&nbsp;columns,&nbsp;row-by-row.&nbsp;Supports&nbsp;operators&nbsp;like&nbsp;col='age&gt;20'.&nbsp;To&nbsp;get&nbsp;multiple&nbsp;columns&nbsp;e.g.&nbsp;set&nbsp;col=[3,6,5]<br>
+Valid&nbsp;column&nbsp;operators:&nbsp;&gt;&nbsp;(greater&nbsp;than),&nbsp;&lt;&nbsp;(less&nbsp;than),&nbsp;=&nbsp;(equals),&nbsp;!&nbsp;(does&nbsp;not&nbsp;equal),&nbsp;~&nbsp;(contains),<br>
+=UNIQUE&nbsp;(will&nbsp;only&nbsp;keep&nbsp;one&nbsp;of&nbsp;each&nbsp;duplicate&nbsp;in&nbsp;the&nbsp;column)<br>
+blanks=False&nbsp;will&nbsp;remove&nbsp;rows&nbsp;that&nbsp;contain&nbsp;*any*&nbsp;blank&nbsp;column&nbsp;entries&nbsp;whatsoever<br>
+exclude=True&nbsp;will&nbsp;skip&nbsp;rows&nbsp;that&nbsp;have&nbsp;a&nbsp;value&nbsp;in&nbsp;the&nbsp;__exclude__&nbsp;column<br>
+Default&nbsp;is&nbsp;return&nbsp;all&nbsp;columns</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-getHeaders"><strong>getHeaders</strong></a>(self)</dt><dd><tt>returns&nbsp;the&nbsp;headers&nbsp;of&nbsp;the&nbsp;columns&nbsp;in&nbsp;the&nbsp;dictionary.<br>
+If&nbsp;lockedHeaders=False,&nbsp;skips&nbsp;the&nbsp;headers&nbsp;starting&nbsp;with&nbsp;'__'</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-getIds"><strong>getIds</strong></a>(self)</dt><dd><tt>returns&nbsp;all&nbsp;keys&nbsp;of&nbsp;the&nbsp;dictionary,&nbsp;except&nbsp;the&nbsp;header&nbsp;key&nbsp;and&nbsp;any&nbsp;IDs&nbsp;starting&nbsp;with&nbsp;'__'</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-grab"><strong>grab</strong></a>(self, key<font color="#909090">=None</font>, header<font color="#909090">=None</font>, level<font color="#909090">=None</font>)</dt><dd><tt>grabs&nbsp;a&nbsp;cell&nbsp;(key&nbsp;+&nbsp;header),&nbsp;a&nbsp;whole&nbsp;row&nbsp;(just&nbsp;key),&nbsp;or&nbsp;all&nbsp;keys&nbsp;that&nbsp;correspond&nbsp;to&nbsp;'level'&nbsp;(header&nbsp;+&nbsp;level)&nbsp;from&nbsp;the&nbsp;dictionary.&nbsp;level='ALL'&nbsp;is&nbsp;valid</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-headerIndex"><strong>headerIndex</strong></a>(self, header)</dt><dd><tt>returns&nbsp;the&nbsp;index&nbsp;of&nbsp;a&nbsp;header&nbsp;in&nbsp;the&nbsp;dictionary</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-insertColumn"><strong>insertColumn</strong></a>(self, header, index<font color="#909090">=None</font>)</dt><dd><tt>inserts&nbsp;a&nbsp;blank&nbsp;column&nbsp;in&nbsp;the&nbsp;dictionary&nbsp;at&nbsp;index&nbsp;(number)</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-isBlank"><strong>isBlank</strong></a>(self, cell)</dt><dd><tt>returns&nbsp;True&nbsp;if&nbsp;cell&nbsp;is&nbsp;considered&nbsp;blank</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-isEmpty"><strong>isEmpty</strong></a>(self)</dt><dd><tt>returns&nbsp;True&nbsp;if&nbsp;this&nbsp;sheet&nbsp;is&nbsp;blank</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-keys"><strong>keys</strong></a>(self, headers<font color="#909090">=True</font>, exclude<font color="#909090">=True</font>, lockedRows<font color="#909090">=True</font>)</dt><dd><tt>returns&nbsp;a&nbsp;list&nbsp;of&nbsp;the&nbsp;keys&nbsp;in&nbsp;the&nbsp;dictionary.<br>
+headers=True&nbsp;adds&nbsp;columnheaders&nbsp;to&nbsp;the&nbsp;list&nbsp;returned<br>
+exclude=True&nbsp;skips&nbsp;rows&nbsp;with&nbsp;a&nbsp;non-blank&nbsp;__exclude__&nbsp;column<br>
+lockedRows=True&nbsp;also&nbsp;returns&nbsp;rows&nbsp;whose&nbsp;ID&nbsp;starts&nbsp;with&nbsp;'__'</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-levels"><strong>levels</strong></a>(self, column, hasHeader<font color="#909090">=False</font>)</dt><dd><tt>returns&nbsp;a&nbsp;tuple&nbsp;containing&nbsp;(the&nbsp;discreet&nbsp;items&nbsp;or&nbsp;'levels',&nbsp;is&nbsp;a&nbsp;numeric&nbsp;list?,&nbsp;the&nbsp;number&nbsp;of&nbsp;levels)</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-load"><strong>load</strong></a>(self, iterable, idColumn<font color="#909090">=None</font>)</dt><dd><tt>creates&nbsp;a&nbsp;Pysheet&nbsp;object&nbsp;from&nbsp;an&nbsp;iterable.<br>
+Optionally&nbsp;specify&nbsp;the&nbsp;column&nbsp;number&nbsp;that&nbsp;contains&nbsp;the&nbsp;unique&nbsp;IDs&nbsp;(starting&nbsp;from&nbsp;0)</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-loadFile"><strong>loadFile</strong></a>(self, filename, idColumn<font color="#909090">=None</font>)</dt><dd><tt>loads&nbsp;the&nbsp;sheet&nbsp;into&nbsp;a&nbsp;dictionary&nbsp;where&nbsp;the&nbsp;IDs&nbsp;in&nbsp;the&nbsp;first&nbsp;column&nbsp;are&nbsp;mapped&nbsp;to&nbsp;their&nbsp;rows.<br>
+Optionally&nbsp;specify&nbsp;the&nbsp;column&nbsp;number&nbsp;that&nbsp;contains&nbsp;the&nbsp;unique&nbsp;IDs&nbsp;(starting&nbsp;from&nbsp;0)</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-mergedValue"><strong>mergedValue</strong></a>(self, cellA, cellB, mode<font color="#909090">='smart_append'</font>)</dt><dd><tt>returns&nbsp;the&nbsp;merged&nbsp;value&nbsp;of&nbsp;two&nbsp;cells,&nbsp;according&nbsp;to&nbsp;mode:<br>
+'smart_append'&nbsp;(appends&nbsp;new&nbsp;value&nbsp;if&nbsp;not&nbsp;already&nbsp;present),&nbsp;'append',&nbsp;'overwrite'&nbsp;and&nbsp;'add'&nbsp;(adds&nbsp;up&nbsp;values&nbsp;if&nbsp;numeric)</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-parseColumns"><strong>parseColumns</strong></a>(self, cols)</dt><dd><tt>parses&nbsp;the&nbsp;input&nbsp;column&nbsp;specification.&nbsp;For&nbsp;example&nbsp;expands&nbsp;["5","1-3","Age&gt;13"]&nbsp;to&nbsp;[[5,1,2,3,9],['','','','','&gt;'],['','','','',13]]<br>
+Returns&nbsp;list&nbsp;of&nbsp;corresponding&nbsp;[[header&nbsp;index,&nbsp;...],&nbsp;[operator,&nbsp;...],&nbsp;[argument,&nbsp;...]]</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-pop"><strong>pop</strong></a>(self, x, default<font color="#909090">=None</font>)</dt><dd><tt>pops&nbsp;an&nbsp;item&nbsp;out&nbsp;of&nbsp;the&nbsp;dictionary</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-produceColumn"><strong>produceColumn</strong></a>(self, col<font color="#909090">=0</font>, blanks<font color="#909090">=True</font>, exclude<font color="#909090">=True</font>)</dt><dd><tt>extracts&nbsp;a&nbsp;column&nbsp;and&nbsp;corresponding&nbsp;IDs&nbsp;from&nbsp;the&nbsp;dictionary&nbsp;(no&nbsp;column&nbsp;headers)<br>
+returns&nbsp;a&nbsp;2D&nbsp;list&nbsp;where&nbsp;[0]&nbsp;is&nbsp;a&nbsp;list&nbsp;of&nbsp;IDs&nbsp;and&nbsp;[1]&nbsp;is&nbsp;the&nbsp;requested&nbsp;column<br>
+Input&nbsp;a&nbsp;list&nbsp;of&nbsp;columns&nbsp;to&nbsp;make&nbsp;a&nbsp;hybrid&nbsp;column&nbsp;eg.&nbsp;col=[3,6,5]<br>
+blanks=False&nbsp;will&nbsp;remove&nbsp;rows&nbsp;that&nbsp;contain&nbsp;*any*&nbsp;blank&nbsp;column&nbsp;entries&nbsp;whatsoever<br>
+exclude=True&nbsp;will&nbsp;skip&nbsp;rows&nbsp;that&nbsp;have&nbsp;a&nbsp;value&nbsp;in&nbsp;the&nbsp;__exclude__&nbsp;column<br>
+Default&nbsp;is&nbsp;return&nbsp;a&nbsp;list&nbsp;of&nbsp;a&nbsp;list&nbsp;of&nbsp;IDs</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-removeCell"><strong>removeCell</strong></a>(self, key, header<font color="#909090">=None</font>)</dt><dd><tt>deletes&nbsp;a&nbsp;cell&nbsp;or&nbsp;a&nbsp;row&nbsp;from&nbsp;the&nbsp;dictionary</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-removeColumns"><strong>removeColumns</strong></a>(self, cols)</dt><dd><tt>removes&nbsp;columns&nbsp;from&nbsp;the&nbsp;dictionary&nbsp;by&nbsp;index,&nbsp;starting&nbsp;from&nbsp;0&nbsp;(not&nbsp;by&nbsp;header&nbsp;name)</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-rename"><strong>rename</strong></a>(self, newName, header<font color="#909090">=None</font>, key<font color="#909090">=None</font>)</dt><dd><tt>renames&nbsp;a&nbsp;column&nbsp;header,&nbsp;or&nbsp;a&nbsp;row&nbsp;key&nbsp;(not&nbsp;both)</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-save"><strong>save</strong></a>(self, output<font color="#909090">=None</font>, delimiter<font color="#909090">=','</font>)</dt><dd><tt>saves&nbsp;the&nbsp;current&nbsp;state&nbsp;of&nbsp;the&nbsp;dictionary&nbsp;as&nbsp;a&nbsp;delimited&nbsp;text&nbsp;file</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-set"><strong>set</strong></a>(self, key, row)</dt><dd><tt>changes&nbsp;the&nbsp;row&nbsp;of&nbsp;an&nbsp;ID&nbsp;in&nbsp;the&nbsp;dictionary</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-zeroFill"><strong>zeroFill</strong></a>(self, zero<font color="#909090">=0</font>)</dt><dd><tt>fills&nbsp;blank&nbsp;cells&nbsp;with&nbsp;zero</tt></dd></dl>
+
+<hr>
+Data and other attributes defined here:<br>
+<dl><dt><strong>APPEND_CHAR</strong> = ';'</dl>
+
+<dl><dt><strong>BLANK_VALUE</strong> = ''</dl>
+
+<dl><dt><strong>EXCLUDE_HEADER</strong> = '__exclude__'</dl>
+
+<dl><dt><strong>FLAG_VALUE</strong> = '__flag__'</dl>
+
+<dl><dt><strong>HEADERS_ID</strong> = '__headers__'</dl>
+
+<dl><dt><strong>MAX_PRINT_WIDTH</strong> = 200</dl>
+
+<dl><dt><strong>MIN_LINE_LEN</strong> = 2</dl>
+
+<dl><dt><strong>delimiter</strong> = None</dl>
+
+<dl><dt><strong>filename</strong> = None</dl>
+
+<dl><dt><strong>idColumn</strong> = 0</dl>
+
+<dl><dt><strong>rows</strong> = None</dl>
+
+</td></tr></table>
+</body></html>
