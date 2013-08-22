@@ -1044,14 +1044,14 @@ def valid_file(f):
   """type for argparse - checks that a file exists but does not open it"""
   f = os.path.realpath(f)
   if not os.path.isfile(f):
-    raise argparse.ArgumentError("File %s does not exist!" % f)
+    raise PysheetException("File does not exist!", f)
   return f
 
 def writeable_file(f):
   """type for argparse - checks that a file is writeable but does not open it"""
   f = os.path.realpath(f)
   if os.path.isfile(f) and not os.access(f, os.W_OK):# or not os.access(os.path.dirname(f), os.W_OK):
-    raise argparse.ArgumentError("File %s is not writeable!" % f)
+    raise PysheetException("File is not writeable!", f)
   return f
 
 def flatten(l):

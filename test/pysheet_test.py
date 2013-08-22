@@ -173,7 +173,7 @@ class TestFunctions(unittest.TestCase):
       cmd = "%s -d %s -o %s -w %s Match yes -L" % (pysheet, test, test, i)
       Popen(cmd.split())
 
-    sleep(120) # wait for processes to finish...
+    sleep(240) # wait for processes to finish...
     
     cmd = "%s -d %s -q Match" % (pysheet, test)
     p = Popen(cmd.split(), stdout=PIPE)
