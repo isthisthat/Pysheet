@@ -305,101 +305,110 @@ Generated using:
 
 Pasted below:
 
-	usage: pysheet.py [-h] [--dataSheet CSV] [--dataDelim DELIMITER]
-	                  [--dataIdCol N] [--lockFile [LOCKFILE]] [--outSheet CSV]
-	                  [--outDelim DELIMITER]
-	                  [--write [ID HEADER VALUE [ID HEADER VALUE ...]]]
-	                  [--read [ID HEADER [ID HEADER ...]]]
-	                  [--remove [ID HEADER [ID HEADER ...]]] [--mergeSheet CSV]
-	                  [--mergeDelim DELIMITER] [--mergeIdCol N]
-	                  [--consolidate [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]]
-	                  [--clean [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]]
-	                  [--columns [COLUMNS [COLUMNS ...]]]
-	                  [--query [QUERY [QUERY ...]]] [--printHeaders] [--version]
-	                  [--verbose]
-	
-	A library to read and write comma-separated (.csv) spreadsheets
-	
-	optional arguments:
-	  -h, --help            show this help message and exit
-	  --version, -V         show program's version number and exit
-	  --verbose, -v         verbosity level
-	
-	Input/Output:
-	  --dataSheet CSV, -d CSV
-	                        A delimited spreadsheet with unique IDs in the first
-	                        column (or use -i) and headers in the first row
-	  --dataDelim DELIMITER, -D DELIMITER
-	                        The delimiter of the input dataSheet. Default is comma
-	                        (,)
-	  --dataIdCol N, -i N   Column number (starting from 0) which contains the
-	                        unique IDs. Default is 0
-	  --lockFile [LOCKFILE], -L [LOCKFILE]
-	                        Prevents parallel jobs from overwriting the dataSheet.
-	                        Use in cluster environments or asynchronous loops.
-	                        Optionally, specify a filename (default is
-	                        <dataSheet>.lock
-	  --outSheet CSV, -o CSV
-	                        Output filename (may include path). Delimiter is
-	                        always comma (,)
-	  --outDelim DELIMITER  The delimiter of the output Sheet. Default is comma
-	                        (,)
-	
-	Read/Write:
-	  --write [ID HEADER VALUE [ID HEADER VALUE ...]], -w [ID HEADER VALUE [ID HEADER VALUE ...]]
-	                        Write new cells
-	  --read [ID HEADER [ID HEADER ...]], -r [ID HEADER [ID HEADER ...]]
-	                        Print value of cells to screen
-	  --remove [ID HEADER [ID HEADER ...]], -R [ID HEADER [ID HEADER ...]]
-	                        Remove cells
-	
-	Merge:
-	  --mergeSheet CSV, -m CSV
-	                        Merge another spreadsheet to this file (can be used
-	                        multiple times)
-	  --mergeDelim DELIMITER, -M DELIMITER
-	                        The delimiter of mergeSheet. Default is comma (,)
-	  --mergeIdCol N, -I N  Column number (starting from 0) which contains the
-	                        unique IDs of the mergeSheet. Default is 0
-	
-	Consolidate:
-	  --consolidate [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]], -c [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]
-	                        Consolidate columns according to keywords (can be used
-	                        multiple times)
-	  --clean [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]], -C [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]
-	                        Consolidate and remove consolitated columns (can be
-	                        used multiple times)
-	
-	Query:
-	  --columns [COLUMNS [COLUMNS ...]], -k [COLUMNS [COLUMNS ...]]
-	                        Extracts specific columns from the dataSheet. e.g.
-	                        '1-3 Age'. Default is print all columns
-	  --query [QUERY [QUERY ...]], -q [QUERY [QUERY ...]]
-	                        Extracts IDs that meet a query. e.g. 'Age>25
-	                        Group=Normal Validated' (NOTE: will not return IDs
-	                        that have a non-blank entry in the special 'Exclude'
-	                        column)
-	  --printHeaders, -H    Prints out all column headers and their index
-	
-	Examples:
-	  pysheet.py -o mystudy.csv -w ID001 Age 38 ID002 Gender M
-	    creates a blank sheet and adds two cell entries to it. Saves it as ./mystudy.csv
-	  
-	  pysheet.py -d mystudy.csv -c Items store -C Price price -C Availability avail -q Availability Price>0.5
-	    consolidates Items across columns whose headers contain the keyword 'store'. Similarly for Price and Availability
-	    then prints all IDs of Items with Price>0.5 and non-blank Availability
-	  
-	  pysheet.py -d /path/table.txt -D'\t' -o ./test/mystudy.csv -k 5 1-3 -v
-	    reads a tab-delimited sheet and saves the columns 0 (assumed to be the IDs) 5,1,2,3 in csv format as ./test/mystudy.csv
-	
-	  pysheet.py -d mystudy.csv -k
-	    prints the entire data sheet to screen
-	
-	  pysheet.py -d mystudy.csv -R 01001 Status -o mystudy.csv
-	    removes the cell for ID '01001' under the 'Status' column
-	
-	  pysheet.py -d results.csv -w iteration_$i Result $val -o results.csv -L
-	    adds a cell to the results sheet (locking the file before read/write access)
+    usage: pysheet.py [-h] [--dataSheet CSV] [--dataDelim DELIMITER]
+                      [--dataIdCol N] [--dataSkipCol N] [--lockFile [LOCKFILE]]
+                      [--outSheet CSV] [--outDelim DELIMITER] [--outNoHeaders]
+                      [--write [ID HEADER VALUE [ID HEADER VALUE ...]] | --read
+                      [ID HEADER [ID HEADER ...]] | --remove
+                      [ID HEADER [ID HEADER ...]]] [--mergeSheet CSV]
+                      [--mergeDelim DELIMITER] [--mergeIdCol N] [--mergeSkipCol N]
+                      [--consolidate [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]]
+                      [--clean [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]]
+                      [--columns [COLUMNS [COLUMNS ...]]]
+                      [--query [QUERY [QUERY ...]]] [--printHeaders] [--version]
+                      [--verbose]
+
+    A library to read and write comma-separated (.csv) spreadsheets
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      --version, -V         show program's version number and exit
+      --verbose, -v         verbosity level
+
+    Input/Output:
+      --dataSheet CSV, -d CSV
+                            A delimited spreadsheet with unique IDs in the first
+                            column (or use -i) and headers in the first row
+      --dataDelim DELIMITER, -D DELIMITER
+                            The delimiter of the input dataSheet. Default is comma
+                            (,)
+      --dataIdCol N, -i N   Column number (starting from 0) which contains the
+                            unique IDs. Enter -1 for auto-generating column ids.
+                            Default is 0 (1st column)
+      --dataSkipCol N, -s N
+                            Skip this number of rows from the top of the file
+      --lockFile [LOCKFILE], -L [LOCKFILE]
+                            Prevents parallel jobs from overwriting the dataSheet.
+                            Use in cluster environments or asynchronous loops.
+                            Optionally, specify a filename (default is
+                            <dataSheet>.lock
+      --outSheet CSV, -o CSV
+                            Output filename (may include path)
+      --outDelim DELIMITER, -O DELIMITER
+                            The delimiter of the output Sheet. Default is comma
+                            (,)
+      --outNoHeaders, -nh   Don't output the header row at the top
+
+    Read/Write:
+      --write [ID HEADER VALUE [ID HEADER VALUE ...]], -w [ID HEADER VALUE [ID HEADER VALUE ...]]
+                            Write new cells
+      --read [ID HEADER [ID HEADER ...]], -r [ID HEADER [ID HEADER ...]]
+                            Print value of cells to screen
+      --remove [ID HEADER [ID HEADER ...]], -R [ID HEADER [ID HEADER ...]]
+                            Remove cells
+
+    Merge:
+      --mergeSheet CSV, -m CSV
+                            Merge another spreadsheet to this file (can be used
+                            multiple times)
+      --mergeDelim DELIMITER, -M DELIMITER
+                            The delimiter of mergeSheet. Default is comma (,)
+      --mergeIdCol N, -I N  Column number (starting from 0) which contains the
+                            unique IDs of the mergeSheet. Default is 0
+      --mergeSkipCol N, -S N
+                            Skip this number of rows from the top of the file
+
+    Consolidate:
+      --consolidate [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]], -c [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]
+                            Consolidate columns according to keywords (can be used
+                            multiple times)
+      --clean [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]], -C [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]
+                            Consolidate and remove consolitated columns (can be
+                            used multiple times)
+
+    Query:
+      --columns [COLUMNS [COLUMNS ...]], -k [COLUMNS [COLUMNS ...]]
+                            Extracts specific columns from the dataSheet. e.g.
+                            '1-3 Age'. Default is print all columns
+      --query [QUERY [QUERY ...]], -q [QUERY [QUERY ...]]
+                            Extracts IDs that meet a query. e.g. 'Age>25
+                            Group=Normal Validated' (NOTE: will not return IDs
+                            that have a non-blank entry in the special 'Exclude'
+                            column)
+      --printHeaders, -H    Prints out all column headers and their index
+
+    Examples:
+        pysheet.py -o mystudy.csv -w ID001 Age 38 ID002 Gender M
+            creates a blank sheet and adds two cell entries to it. Saves it as ./mystudy.csv
+        
+        pysheet.py -d mystudy.csv -c Items store -C Price price -C Availability avail -q Availability Price>0.5
+            consolidates Items across columns whose headers contain the keyword 'store'. Similarly for Price and Availability
+            then prints all IDs of Items with Price>0.5 and non-blank Availability
+        
+        pysheet.py -d /path/table.txt -D'\t' -o ./test/mystudy.csv -k 5 1-3 -v
+            reads a tab-delimited sheet and saves the columns 0 (assumed to be the IDs) 5,1,2,3 in csv format as ./test/mystudy.csv
+
+        pysheet.py -d mystudy.csv -k
+            prints the entire data sheet to screen
+
+        pysheet.py -d mystudy.csv -R 01001 Status -o mystudy.csv
+            removes the cell for ID '01001' under the 'Status' column
+
+        pysheet.py -d results.csv -w iteration_$i Result $val -o results.csv -L
+            adds a cell to the results sheet (locking the file before read/write access)
+
+        pysheet.py -d table.txt -D '\t' -i -1 -k 2 3 1 -o table_subset.txt -O '\t' -nh
+            rearranges the first 3 column of a tab-delimited file and saves it out without a header
 
 ### Pydoc
 Generated using:

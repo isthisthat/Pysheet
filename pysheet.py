@@ -56,6 +56,9 @@ Examples:
 
     %(prog)s -d results.csv -w iteration_$i Result $val -o results.csv -L
         adds a cell to the results sheet (locking the file before read/write access)
+
+    %(prog)s -d table.txt -D '\t' -i -1 -k 2 3 1 -o table_subset.txt -O '\t' -nh
+        rearranges the first 3 column of a tab-delimited file and saves it out without a header
 """)
     groupIO = parser.add_argument_group('Input/Output')
     groupIO.add_argument('--dataSheet', '-d', type=valid_file, metavar="CSV", help='A delimited spreadsheet with unique IDs in the first column (or use -i) and headers in the first row')
