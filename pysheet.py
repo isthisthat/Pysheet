@@ -66,7 +66,7 @@ Examples:
             Optionally, specify a filename (default is <dataSheet>.lock", const=True)
     groupIO.add_argument('--outSheet', '-o', type=writeable_file, metavar="CSV", help='Output filename (may include path)')
     groupIO.add_argument('--outDelim', '-O', metavar='DELIMITER', help='The delimiter of the output Sheet. Default is comma (,)', default=',')
-    groupIO.add_argument('--outNoHeaders', '-nh', action='store_true', help="Don't output the header row at the top", default=True)
+    groupIO.add_argument('--outNoHeaders', '-nh', action='store_true', help="Don't output the header row at the top")
     
     groupRW = parser.add_argument_group('Read/Write')
     groupRW_me = groupRW.add_mutually_exclusive_group()
@@ -211,6 +211,8 @@ Examples:
             args.mergeDelim = [',']
         if not args.mergeIdCol:
             args.mergeIdCol = [0]
+        if not args.mergeSkipCol:
+            args.mergeSkipCol = [0]
         # now check merge parameters..
         if len(args.mergeDelim) != len(args.mergeSheet):
             if len(args.mergeDelim) == 1:
@@ -223,6 +225,12 @@ Examples:
                 args.mergeIdCol = args.mergeIdCol * len(args.mergeSheet) # make this the idColumn for all mergeSheets
             else:
                 logger.critical("!!! You must provide either one mergeIdCol or as many as your mergeSheets (%d). Currently: %d" % (len(args.mergeSheet), len(args.mergeIdCol)))
+                return 1
+        if len(args.mergeSkipCol) != len(args.mergeSheet):
+            if len(args.mergeSkipCol) == 1:
+                args.mergeSkipCol = args.mergeSkipCol * len(args.mergeSheet) # make this the number of columns to skip for all mergeSheets
+            else:
+                logger.critical("!!! You must provide either one mergeSkipCol or as many as your mergeSheets (%d). Currently: %d" % (len(args.mergeSheet), len(args.mergeSkipCol)))
                 return 1
         # now merge
         for m in range(len(args.mergeSheet)):
@@ -440,7 +448,7 @@ class Pysheet:
                 if skip_counter < skip:
                     skip_counter += 1
                     continue
-                if line_len < self.MIN_LINE_LEN or line[0].startswith(self.COMMEND_CHAR): # skip blank, short lines and comments
+                if line_len < self.MIN_LINE_LEN or str(line[0]).startswith(self.COMMEND_CHAR): # skip blank, short lines and comments
                     continue
                 if row == 1:
                     head_len = line_len
@@ -467,11 +475,11 @@ class Pysheet:
                 row += 1
         except StopIteration:
             #pass
-            print "%d rows loaded" % self.height()
+            sys.stderr.write("%d rows loaded\n" % self.height())
             discarded = row-1 - self.height()
             if discarded > 0:
-                print "%d rows discarded due to overlapping IDs!" % discarded
-            print "%d columns loaded\n" % head_len
+                sys.stderr.write("%d rows discarded due to overlapping IDs!\n" % discarded)
+            sys.stderr.write("%d columns loaded\n\n" % head_len)
         except Exception as e:
             printStackTrace()
             raise PysheetException(e.message)
