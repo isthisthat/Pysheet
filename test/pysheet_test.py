@@ -169,16 +169,18 @@ class TestFunctions(unittest.TestCase):
     myout = p.stdout.readlines()
     self.assertEqual(len(myout), 116)
 
-    for i in myout:
-      cmd = "%s -d %s -o %s -w %s Match yes -L" % (pysheet, test, test, i)
+    counter = 0
+    while counter < 10:
+      cmd = "%s -d %s -o %s -w %s Match yes -L" % (pysheet, test, test, myout[counter])
       Popen(cmd.split())
+      counter += 1
 
-    sleep(240) # wait for processes to finish...
+    sleep(30) # wait for processes to finish...
     
     cmd = "%s -d %s -q Match" % (pysheet, test)
     p = Popen(cmd.split(), stdout=PIPE)
     myout = p.stdout.readlines()
-    self.assertEqual(len(myout), 116)
+    self.assertEqual(len(myout), 10)
 
     # check that we have cleaned up the lock..
     self.assertRaises(OSError, os.remove, test_lock)
