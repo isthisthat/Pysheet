@@ -22,6 +22,10 @@ from texttable import Texttable
 from time import sleep
 from datetime import datetime
 from random import random
+from signal import signal, SIGPIPE, SIG_DFL
+
+# don't throw exceptions on closed pipes..
+signal(SIGPIPE,SIG_DFL)
 
 # unbuffered stdout
 unbuffered = os.fdopen(sys.stdout.fileno(), 'w', 0)
@@ -58,16 +62,16 @@ Examples:
         adds a cell to the results sheet (locking the file before read/write access)
 
     %(prog)s -d table.txt -D '\t' -i -1 -k 2 3 1 -o table_subset.txt -O '\t' -nh
-        rearranges the first 3 column of a tab-delimited file and saves it out without a header
+        rearranges the first 3 columns of a tab-delimited file and saves it out without a header
 """)
     groupIO = parser.add_argument_group('Input/Output')
-    groupIO.add_argument('--dataSheet', '-d', type=valid_file, metavar="CSV", help='A delimited spreadsheet with unique IDs in the first column (or use -i) and headers in the first row')
+    groupIO.add_argument('--dataSheet', '-d', type=readable, metavar="CSV", help='A delimited spreadsheet with unique IDs in the first column (or use -i) and headers in the first row. You may also use "stdin"')
     groupIO.add_argument('--dataDelim', '-D', metavar='DELIMITER', help='The delimiter of the input dataSheet. Default is comma (,)', default=',')
     groupIO.add_argument('--dataIdCol', '-i', type=int, metavar='N', help='Column number (starting from 0) which contains the unique IDs. Enter -1 for auto-generating column ids. Default is 0 (1st column)', default=0)
     groupIO.add_argument('--dataSkipCol', '-s', type=int, metavar='N', help='Skip this number of rows from the top of the file')
-    groupIO.add_argument('--lockFile', '-L', nargs='?', type=writeable_file, help="Prevents parallel jobs from overwriting the dataSheet. Use in cluster environments or asynchronous loops. \
+    groupIO.add_argument('--lockFile', '-L', nargs='?', type=writeable, help="Prevents parallel jobs from overwriting the dataSheet. Use in cluster environments or asynchronous loops. \
             Optionally, specify a filename (default is <dataSheet>.lock", const=True)
-    groupIO.add_argument('--outSheet', '-o', type=writeable_file, metavar="CSV", help='Output filename (may include path)')
+    groupIO.add_argument('--outSheet', '-o', type=writeable, metavar="CSV", help='Output filename (may include path). You may also use "stdout"')
     groupIO.add_argument('--outDelim', '-O', metavar='DELIMITER', help='The delimiter of the output Sheet. Default is comma (,)', default=',')
     groupIO.add_argument('--outNoHeaders', '-nh', action='store_true', help="Don't output the header row at the top")
     
@@ -78,7 +82,7 @@ Examples:
     groupRW_me.add_argument('--remove', '-R', nargs='*', metavar="ID HEADER", help="Remove cells")
 
     groupM = parser.add_argument_group('Merge')
-    groupM.add_argument('--mergeSheet', '-m', action='append', type=valid_file, metavar="CSV", help='Merge another spreadsheet to this file (can be used multiple times)')
+    groupM.add_argument('--mergeSheet', '-m', action='append', type=readable, metavar="CSV", help='Merge another spreadsheet to this file (can be used multiple times)')
     groupM.add_argument('--mergeDelim', '-M', action='append', metavar='DELIMITER', help='The delimiter of mergeSheet. Default is comma (,)')
     groupM.add_argument('--mergeIdCol', '-I', action='append', type=int, metavar='N', help='Column number (starting from 0) which contains the unique IDs of the mergeSheet. Default is 0')
     groupM.add_argument('--mergeSkipCol', '-S', action='append', type=int, metavar='N', help='Skip this number of rows from the top of the file')
@@ -148,7 +152,7 @@ Examples:
             if args.dataSheet and os.path.samefile(args.lockFile, args.dataSheet):
                 logger.critical("!!! lockFile can't be the same as your dataSheet!")
                 return 1
-        args.lockFile = writeable_file(args.lockFile) # check it is writeable
+        args.lockFile = writeable(args.lockFile) # check it is writeable
 
         # check that we have something to lock
         if args.dataSheet:
@@ -199,10 +203,10 @@ Examples:
                 logger.debug(">>> Grabbing lock...")
 
     # check if output exists
-    if args.outSheet and os.path.isfile(args.outSheet) and not os.path.samefile(args.outSheet, args.dataSheet):
+    if args.outSheet and args.outSheet != 'stdout' and os.path.isfile(args.outSheet) and not os.path.samefile(args.outSheet, args.dataSheet):
         logger.warn("!!! outSheet already exists and will be overwritten: %s" % args.outSheet)
     if args.outSheet and not args.dataSheet:
-        logger.warn(">>> Creating a blank sheet: %s" % args.outSheet)
+        logger.warn(">>> Creating a blank sheet in: %s" % args.outSheet)
 
     # now read the file
     mycsv = Pysheet(args.dataSheet, delimiter=args.dataDelim, idColumn=args.dataIdCol, skip=args.dataSkipCol)
@@ -263,9 +267,6 @@ Examples:
         except ValueError:
             logger.critical("!!! Cell entries must be of the form 'ID header': " % flatten(args.remove))
             return 1
-        except IOError as e:
-            if e.errno == EPIPE:
-                pass # pipe to the other program was closed
 
     
     # add cells
@@ -282,9 +283,6 @@ Examples:
         except ValueError:
             logger.critical("!!! Cell entries must be of the form 'ID header value': " % flatten(args.write))
             return 1
-        except IOError as e:
-            if e.errno == EPIPE:
-                pass # pipe to the other program was closed
 
         
     # consolidate
@@ -301,31 +299,23 @@ Examples:
     # query
     # by columns
     if args.columns != None: # we still need to handle []
-        try:
-            if not args.columns == []: # if we got some column specification, extract those columns (else print all columns)
-                cols = Pysheet()
-                cols.load(mycsv.getColumns(args.columns, blanks=True, exclude=False))
-                mycsv = cols # make this the current spreadsheet
-            if not args.outSheet and not args.query and not args.read and not args.printHeaders:
-                sys.stdout.write(str(mycsv))
-        except IOError as e:
-            if e.errno == EPIPE:
-                pass # pipe to the other program was closed
+        if not args.columns == []: # if we got some column specification, extract those columns (else print all columns)
+            cols = Pysheet()
+            cols.load(mycsv.getColumns(args.columns, blanks=True, exclude=False))
+            mycsv = cols # make this the current spreadsheet
+        if not args.outSheet and not args.query and not args.read and not args.printHeaders:
+            sys.stdout.write(str(mycsv))
     # print headers
     if args.printHeaders:
         for hi in range(len(mycsv.getHeaders())):
             sys.stdout.write("%d %s\n" % (hi, mycsv.getHeaders()[hi]))
     # by rows
     if args.query:
-        try:
-            retList = transpose(mycsv.getColumns(args.query))[0][1:] # skip the headers
-            retList.sort()
-            logger.info("=== Query '%s' returned %d ID%s.." % (flatten(args.query), len(retList), '' if len(retList)==1 else 's'))
-            for item in retList:
-                sys.stdout.write(item+"\n")
-        except IOError as e:
-            if e.errno == EPIPE:
-                pass # pipe to the other program was closed
+        retList = transpose(mycsv.getColumns(args.query))[0][1:] # skip the headers
+        retList.sort()
+        logger.info("=== Query '%s' returned %d ID%s.." % (flatten(args.query), len(retList), '' if len(retList)==1 else 's'))
+        for item in retList:
+            sys.stdout.write(item+"\n")
     # by cells
     if args.read:
         try:
@@ -345,9 +335,6 @@ Examples:
         except ValueError:
             logger.critical("!!! Cell entries must be of the form 'ID header': " % flatten(args.read))
             return 1
-        except IOError as e:
-            if e.errno == EPIPE:
-                pass # pipe to the other program was closed
 
     # now save
     if save:
@@ -355,7 +342,7 @@ Examples:
             logger.debug(">>> Sleeping %d sec" % args.wait)
             sleep(args.wait)
         mycsv.save(args.outSheet, args.outDelim, not args.outNoHeaders)
-        logger.info("=== Sheet saved as: %s" % args.outSheet)
+        logger.info("=== Sheet saved in: %s" % args.outSheet)
     
     if lock:
         logger.debug(">>> Releasing lock...")
@@ -375,7 +362,7 @@ class Pysheet:
     EXCLUDE_HEADER  = "__exclude__" # special column header used to flag a row for exclusion
     AUTO_ID_HEADER  = "__Auto_ID__" # header used for auto ids when negative idColumn specified
     MIN_LINE_LEN    = 2             # minimum length of input line array to treat as valid
-    COMMEND_CHAR    = '#'           # lines starting with this character will be excluded
+    COMMENT_CHAR    = '#'           # lines starting with this character will be excluded
     APPEND_CHAR     = ';'           # character used to merge strings in consolidated columns
     BLANK_VALUE     = ''            # default value used for empty cells
     FLAG_VALUE      = '__flag__'    # flags a row for filtering
@@ -403,7 +390,7 @@ class Pysheet:
         else:
             self.delimiter = delimiter
         self.rows = {}
-        if filename and os.path.exists(filename):
+        if filename and (os.path.exists(filename) or filename == 'stdin'):
             self.loadFile(self.filename, self.idColumn, skip)
         elif iterable != None:
             self.load(iterable, self.idColumn, skip)
@@ -414,7 +401,10 @@ class Pysheet:
         """loads the sheet into a dictionary where the IDs in the first column are mapped to their rows.
         Optionally specify the column number that contains the unique IDs (starting from 0)"""
         try:
-            reader = csv.reader(open(filename, "rUb"), delimiter=self.delimiter)
+            if filename == 'stdin':
+                reader = csv.reader(sys.stdin, delimiter=self.delimiter)
+            else:
+                reader = csv.reader(open(filename, "rUb"), delimiter=self.delimiter)
         except csv.Error as e:
             raise PysheetException(e, filename)
         self.filename = filename
@@ -451,7 +441,7 @@ class Pysheet:
                 if skip_counter < skip:
                     skip_counter += 1
                     continue
-                if line_len < self.MIN_LINE_LEN or str(line[0]).startswith(self.COMMEND_CHAR): # skip blank, short lines and comments
+                if line_len < self.MIN_LINE_LEN or str(line[0]).startswith(self.COMMENT_CHAR): # skip blank, short lines and comments
                     continue
                 if row == 1:
                     head_len = line_len
@@ -481,7 +471,7 @@ class Pysheet:
             sys.stderr.write("%d rows loaded\n" % self.height())
             discarded = row-1 - self.height()
             if discarded > 0:
-                sys.stderr.write("%d rows discarded due to overlapping IDs!\n" % discarded)
+                sys.stderr.write("%d rows discarded due to duplicate IDs!\n" % discarded)
             sys.stderr.write("%d columns loaded\n\n" % head_len)
         except Exception as e:
             printStackTrace()
@@ -1029,7 +1019,10 @@ class Pysheet:
         elif delimiter == r'\s':
             delimiter = "\s"
         # prepare the output writer
-        writer = csv.writer(open(output, "wb"), delimiter=delimiter)
+        if output == 'stdout':
+            writer = csv.writer(sys.stdout, delimiter=delimiter)
+        else:
+            writer = csv.writer(open(output, "wb"), delimiter=delimiter)
         keys = self.rows.keys()
         keys.sort()
         skipAutoID = False
@@ -1112,15 +1105,19 @@ class PysheetException(Exception):
 ###### UTILITY FUNCTIONS ######
 ###############################
 
-def valid_file(f):
+def readable(f):
     """type for argparse - checks that a file exists but does not open it"""
+    if f.lower() == "stdin":
+        return f.lower()
     f = os.path.realpath(f)
     if not os.path.isfile(f):
         raise PysheetException("File does not exist!", f)
     return f
 
-def writeable_file(f):
+def writeable(f):
     """type for argparse - checks that a file is writeable but does not open it"""
+    if f.lower() == "stdout":
+        return f.lower()
     f = os.path.realpath(f)
     if os.path.isfile(f) and not os.access(f, os.W_OK):# or not os.access(os.path.dirname(f), os.W_OK):
         raise PysheetException("File is not writeable!", f)
@@ -1149,16 +1146,15 @@ def tryNumber(x):
     """tries to return an appropriate number from x or just x if not a number"""
     if isList(x):
         return [tryNumber(i) for i in x]
-    if not str(x).isdigit():
-        try:
-            return float(x)
-        except ValueError:
-            return x
-    else:
-        try:
-            return int(x) # will return long if long int!
-        except ValueError:
-            return x
+    try:
+        f = float(x)
+        i = int(x) # will make long if long int!
+        if f == i:
+            return i
+        else:
+            return f
+    except ValueError:
+        return x
 
 def transpose(arr):
     """transposes a nested list (2D-array)"""

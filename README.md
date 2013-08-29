@@ -408,7 +408,7 @@ Pasted below:
             adds a cell to the results sheet (locking the file before read/write access)
 
         pysheet.py -d table.txt -D '\t' -i -1 -k 2 3 1 -o table_subset.txt -O '\t' -nh
-            rearranges the first 3 column of a tab-delimited file and saves it out without a header
+            rearranges the first 3 columns of a tab-delimited file and saves it out without a header
 
 ### Pydoc
 Generated using:
