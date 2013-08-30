@@ -4,11 +4,11 @@
 A library to read, write and manipulate spreadsheets
 
 Copyright (c) 2013, Stathis Kanterakis
-Last Update: May 2013
+Last Update: Aug 2013
 """
 
 __version__ = "2.0"
-__author__    = "Stathis Kanterakis"
+__author__  = "Stathis Kanterakis"
 __license__ = "LGPL"
 
 import csv, sys, os, logging, re, traceback
@@ -61,13 +61,13 @@ Examples:
     %(prog)s -d results.csv -w iteration_$i Result $val -o results.csv -L
         adds a cell to the results sheet (locking the file before read/write access)
 
-    %(prog)s -d table.txt -D '\t' -i -1 -k 2 3 1 -o table_subset.txt -O '\t' -nh
-        rearranges the first 3 columns of a tab-delimited file and saves it out without a header
+    %(prog)s -d table.txt -D '\\t' -i -1 -k 2 3 1 -o stdout -O '\\t' -nh | further_proc
+        rearranges the first 3 columns of a tab-delimited file and forwards the output to stdout for further processing
 """)
     groupIO = parser.add_argument_group('Input/Output')
     groupIO.add_argument('--dataSheet', '-d', type=readable, metavar="CSV", help='A delimited spreadsheet with unique IDs in the first column (or use -i) and headers in the first row. You may also use "stdin"')
     groupIO.add_argument('--dataDelim', '-D', metavar='DELIMITER', help='The delimiter of the input dataSheet. Default is comma (,)', default=',')
-    groupIO.add_argument('--dataIdCol', '-i', type=int, metavar='N', help='Column number (starting from 0) which contains the unique IDs. Enter -1 for auto-generating column ids. Default is 0 (1st column)', default=0)
+    groupIO.add_argument('--dataIdCol', '-i', type=int, metavar='N', help='Column number (starting from 0) which contains the unique IDs. Enter -1 for auto-generating row IDs. Default is 0 (first column)', default=0)
     groupIO.add_argument('--dataSkipCol', '-s', type=int, metavar='N', help='Skip this number of rows from the top of the file')
     groupIO.add_argument('--lockFile', '-L', nargs='?', type=writeable, help="Prevents parallel jobs from overwriting the dataSheet. Use in cluster environments or asynchronous loops. \
             Optionally, specify a filename (default is <dataSheet>.lock", const=True)
@@ -471,7 +471,7 @@ class Pysheet:
             sys.stderr.write("%d rows loaded\n" % self.height())
             discarded = row-1 - self.height()
             if discarded > 0:
-                sys.stderr.write("%d rows discarded due to duplicate IDs!\n" % discarded)
+                sys.stderr.write("%d rows discarded due to duplicate IDs! Consider using -i -1\n" % discarded)
             sys.stderr.write("%d columns loaded\n\n" % head_len)
         except Exception as e:
             printStackTrace()

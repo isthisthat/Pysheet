@@ -18,7 +18,7 @@
 
 <dl><dt><a name="Pysheet-__getitem__"><strong>__getitem__</strong></a>(self, key, default<font color="#909090">=None</font>)</dt><dd><tt>gets&nbsp;the&nbsp;row&nbsp;of&nbsp;an&nbsp;ID&nbsp;from&nbsp;the&nbsp;dictionary</tt></dd></dl>
 
-<dl><dt><a name="Pysheet-__init__"><strong>__init__</strong></a>(self, filename<font color="#909090">=None</font>, delimiter<font color="#909090">=','</font>, iterable<font color="#909090">=None</font>, idColumn<font color="#909090">=None</font>)</dt><dd><tt>initializes&nbsp;the&nbsp;object&nbsp;and&nbsp;reads&nbsp;in&nbsp;a&nbsp;sheet&nbsp;from&nbsp;a&nbsp;file&nbsp;or&nbsp;an&nbsp;iterable.<br>
+<dl><dt><a name="Pysheet-__init__"><strong>__init__</strong></a>(self, filename<font color="#909090">=None</font>, delimiter<font color="#909090">=','</font>, iterable<font color="#909090">=None</font>, idColumn<font color="#909090">=None</font>, skip<font color="#909090">=0</font>)</dt><dd><tt>initializes&nbsp;the&nbsp;object&nbsp;and&nbsp;reads&nbsp;in&nbsp;a&nbsp;sheet&nbsp;from&nbsp;a&nbsp;file&nbsp;or&nbsp;an&nbsp;iterable.<br>
 Optionally&nbsp;specify&nbsp;the&nbsp;column&nbsp;number&nbsp;that&nbsp;contains&nbsp;the&nbsp;unique&nbsp;IDs&nbsp;(starting&nbsp;from&nbsp;0)</tt></dd></dl>
 
 <dl><dt><a name="Pysheet-__iter__"><strong>__iter__</strong></a>(self)</dt><dd><tt>returns&nbsp;an&nbsp;iterator&nbsp;over&nbsp;the&nbsp;ID:row&nbsp;items&nbsp;in&nbsp;the&nbsp;csv</tt></dd></dl>
@@ -66,6 +66,8 @@ If&nbsp;lockedHeaders=False,&nbsp;skips&nbsp;the&nbsp;headers&nbsp;starting&nbsp
 
 <dl><dt><a name="Pysheet-headerIndex"><strong>headerIndex</strong></a>(self, header)</dt><dd><tt>returns&nbsp;the&nbsp;index&nbsp;of&nbsp;a&nbsp;header&nbsp;in&nbsp;the&nbsp;dictionary</tt></dd></dl>
 
+<dl><dt><a name="Pysheet-height"><strong>height</strong></a>(self)</dt><dd><tt>returns&nbsp;the&nbsp;number&nbsp;of&nbsp;rows&nbsp;in&nbsp;the&nbsp;dictionary</tt></dd></dl>
+
 <dl><dt><a name="Pysheet-insertColumn"><strong>insertColumn</strong></a>(self, header, index<font color="#909090">=None</font>)</dt><dd><tt>inserts&nbsp;a&nbsp;blank&nbsp;column&nbsp;in&nbsp;the&nbsp;dictionary&nbsp;at&nbsp;index&nbsp;(number)</tt></dd></dl>
 
 <dl><dt><a name="Pysheet-isBlank"><strong>isBlank</strong></a>(self, cell)</dt><dd><tt>returns&nbsp;True&nbsp;if&nbsp;cell&nbsp;is&nbsp;considered&nbsp;blank</tt></dd></dl>
@@ -79,10 +81,10 @@ lockedRows=True&nbsp;also&nbsp;returns&nbsp;rows&nbsp;whose&nbsp;ID&nbsp;starts&
 
 <dl><dt><a name="Pysheet-levels"><strong>levels</strong></a>(self, column, hasHeader<font color="#909090">=False</font>)</dt><dd><tt>returns&nbsp;a&nbsp;tuple&nbsp;containing&nbsp;(the&nbsp;discreet&nbsp;items&nbsp;or&nbsp;'levels',&nbsp;is&nbsp;a&nbsp;numeric&nbsp;list?,&nbsp;the&nbsp;number&nbsp;of&nbsp;levels)</tt></dd></dl>
 
-<dl><dt><a name="Pysheet-load"><strong>load</strong></a>(self, iterable, idColumn<font color="#909090">=None</font>)</dt><dd><tt>creates&nbsp;a&nbsp;Pysheet&nbsp;object&nbsp;from&nbsp;an&nbsp;iterable.<br>
+<dl><dt><a name="Pysheet-load"><strong>load</strong></a>(self, iterable, idColumn<font color="#909090">=None</font>, skip<font color="#909090">=0</font>)</dt><dd><tt>creates&nbsp;a&nbsp;Pysheet&nbsp;object&nbsp;from&nbsp;an&nbsp;iterable.<br>
 Optionally&nbsp;specify&nbsp;the&nbsp;column&nbsp;number&nbsp;that&nbsp;contains&nbsp;the&nbsp;unique&nbsp;IDs&nbsp;(starting&nbsp;from&nbsp;0)</tt></dd></dl>
 
-<dl><dt><a name="Pysheet-loadFile"><strong>loadFile</strong></a>(self, filename, idColumn<font color="#909090">=None</font>)</dt><dd><tt>loads&nbsp;the&nbsp;sheet&nbsp;into&nbsp;a&nbsp;dictionary&nbsp;where&nbsp;the&nbsp;IDs&nbsp;in&nbsp;the&nbsp;first&nbsp;column&nbsp;are&nbsp;mapped&nbsp;to&nbsp;their&nbsp;rows.<br>
+<dl><dt><a name="Pysheet-loadFile"><strong>loadFile</strong></a>(self, filename, idColumn<font color="#909090">=None</font>, skip<font color="#909090">=0</font>)</dt><dd><tt>loads&nbsp;the&nbsp;sheet&nbsp;into&nbsp;a&nbsp;dictionary&nbsp;where&nbsp;the&nbsp;IDs&nbsp;in&nbsp;the&nbsp;first&nbsp;column&nbsp;are&nbsp;mapped&nbsp;to&nbsp;their&nbsp;rows.<br>
 Optionally&nbsp;specify&nbsp;the&nbsp;column&nbsp;number&nbsp;that&nbsp;contains&nbsp;the&nbsp;unique&nbsp;IDs&nbsp;(starting&nbsp;from&nbsp;0)</tt></dd></dl>
 
 <dl><dt><a name="Pysheet-mergedValue"><strong>mergedValue</strong></a>(self, cellA, cellB, mode<font color="#909090">='smart_append'</font>)</dt><dd><tt>returns&nbsp;the&nbsp;merged&nbsp;value&nbsp;of&nbsp;two&nbsp;cells,&nbsp;according&nbsp;to&nbsp;mode:<br>
@@ -106,7 +108,7 @@ Default&nbsp;is&nbsp;return&nbsp;a&nbsp;list&nbsp;of&nbsp;a&nbsp;list&nbsp;of&nb
 
 <dl><dt><a name="Pysheet-rename"><strong>rename</strong></a>(self, newName, header<font color="#909090">=None</font>, key<font color="#909090">=None</font>)</dt><dd><tt>renames&nbsp;a&nbsp;column&nbsp;header,&nbsp;or&nbsp;a&nbsp;row&nbsp;key&nbsp;(not&nbsp;both)</tt></dd></dl>
 
-<dl><dt><a name="Pysheet-save"><strong>save</strong></a>(self, output<font color="#909090">=None</font>, delimiter<font color="#909090">=','</font>)</dt><dd><tt>saves&nbsp;the&nbsp;current&nbsp;state&nbsp;of&nbsp;the&nbsp;dictionary&nbsp;as&nbsp;a&nbsp;delimited&nbsp;text&nbsp;file</tt></dd></dl>
+<dl><dt><a name="Pysheet-save"><strong>save</strong></a>(self, output<font color="#909090">=None</font>, delimiter<font color="#909090">=','</font>, saveHeaders<font color="#909090">=True</font>)</dt><dd><tt>saves&nbsp;the&nbsp;current&nbsp;state&nbsp;of&nbsp;the&nbsp;dictionary&nbsp;as&nbsp;a&nbsp;delimited&nbsp;text&nbsp;file</tt></dd></dl>
 
 <dl><dt><a name="Pysheet-set"><strong>set</strong></a>(self, key, row)</dt><dd><tt>changes&nbsp;the&nbsp;row&nbsp;of&nbsp;an&nbsp;ID&nbsp;in&nbsp;the&nbsp;dictionary</tt></dd></dl>
 
@@ -116,7 +118,11 @@ Default&nbsp;is&nbsp;return&nbsp;a&nbsp;list&nbsp;of&nbsp;a&nbsp;list&nbsp;of&nb
 Data and other attributes defined here:<br>
 <dl><dt><strong>APPEND_CHAR</strong> = ';'</dl>
 
+<dl><dt><strong>AUTO_ID_HEADER</strong> = '__Auto_ID__'</dl>
+
 <dl><dt><strong>BLANK_VALUE</strong> = ''</dl>
+
+<dl><dt><strong>COMMENT_CHAR</strong> = '#'</dl>
 
 <dl><dt><strong>EXCLUDE_HEADER</strong> = '__exclude__'</dl>
 

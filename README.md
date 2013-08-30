@@ -328,13 +328,14 @@ Pasted below:
     Input/Output:
       --dataSheet CSV, -d CSV
                             A delimited spreadsheet with unique IDs in the first
-                            column (or use -i) and headers in the first row
+                            column (or use -i) and headers in the first row. You
+                            may also use "stdin"
       --dataDelim DELIMITER, -D DELIMITER
                             The delimiter of the input dataSheet. Default is comma
                             (,)
       --dataIdCol N, -i N   Column number (starting from 0) which contains the
-                            unique IDs. Enter -1 for auto-generating column ids.
-                            Default is 0 (1st column)
+                            unique IDs. Enter -1 for auto-generating row IDs.
+                            Default is 0 (first column)
       --dataSkipCol N, -s N
                             Skip this number of rows from the top of the file
       --lockFile [LOCKFILE], -L [LOCKFILE]
@@ -343,7 +344,8 @@ Pasted below:
                             Optionally, specify a filename (default is
                             <dataSheet>.lock
       --outSheet CSV, -o CSV
-                            Output filename (may include path)
+                            Output filename (may include path). You may also use
+                            "stdout"
       --outDelim DELIMITER, -O DELIMITER
                             The delimiter of the output Sheet. Default is comma
                             (,)
@@ -407,8 +409,8 @@ Pasted below:
         pysheet.py -d results.csv -w iteration_$i Result $val -o results.csv -L
             adds a cell to the results sheet (locking the file before read/write access)
 
-        pysheet.py -d table.txt -D '\t' -i -1 -k 2 3 1 -o table_subset.txt -O '\t' -nh
-            rearranges the first 3 columns of a tab-delimited file and saves it out without a header
+        pysheet.py -d table.txt -D '\t' -i -1 -k 2 3 1 -o stdout -O '\t' -nh | further_proc
+            rearranges the first 3 columns of a tab-delimited file and forwards the output to stdout for further processing
 
 ### Pydoc
 Generated using:
@@ -419,11 +421,26 @@ Generated using:
 
 Available at [Pysheet.html](http://htmlpreview.github.io/?https://github.com/isthisthat/Pysheet/blob/master/Pysheet.html)
 
+## Changelog
+### v2.0
+* Added input/output from/to stdin/stdout
+* Indexing column can now be user-specified
+* Enabled automatic indexing (in case there is no unique-ID column)
+* Added options to deal with headers and comments
+* Added tests!
+* Made README and example
+* Lots of refactoring to make code more robust
+
+### v1.0
+* Read, write, merge, consolidate and query spreadsheets
+* Concurrent access control
+
+
 ## TODO
 * Allow indexing by more than one column (e.g. chromosome\_position\_allele)
 * Allow creation of SubSheets, i.e. to extract certain rows and columns from a Pysheet
-* Integrate version control (perhaps git) for disaster recovery
-* Handle the case when the are duplicate IDs (and thus they overwrite each-other during loading)
+* Integrate version control (perhaps git) for disaster recovery of spreadsheets operated on
+* Read global settings from a .pysheetrc rather than hard-code them
 * Submit this as a package to PyPi
 * Please [let me know](https://github.com/isthisthat/Pysheet/issues) if you'd like to see more features!
 
