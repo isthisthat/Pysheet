@@ -306,14 +306,17 @@ Generated using:
 Pasted below:
 
     usage: pysheet.py [-h] [--dataSheet CSV] [--dataDelim DELIMITER]
-                      [--dataIdCol N] [--dataSkipCol N] [--lockFile [LOCKFILE]]
-                      [--outSheet CSV] [--outDelim DELIMITER] [--outNoHeaders]
+                      [--dataIdCol N] [--dataNoHeader] [--dataSkipCol N]
+                      [--lockFile [LOCKFILE]] [--outSheet CSV]
+                      [--outDelim DELIMITER] [--outNoHeaders]
                       [--write [ID HEADER VALUE [ID HEADER VALUE ...]] | --read
                       [ID HEADER [ID HEADER ...]] | --remove
                       [ID HEADER [ID HEADER ...]]] [--mergeSheet CSV]
-                      [--mergeDelim DELIMITER] [--mergeIdCol N] [--mergeSkipCol N]
+                      [--mergeDelim DELIMITER] [--mergeIdCol N] [--mergeNoHeader]
+                      [--mergeSkipCol N]
                       [--consolidate [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]]
                       [--clean [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]]
+                      [--mode [append|overwrite|add]]
                       [--columns [COLUMNS [COLUMNS ...]]]
                       [--query [QUERY [QUERY ...]]] [--printHeaders] [--version]
                       [--verbose]
@@ -336,6 +339,7 @@ Pasted below:
       --dataIdCol N, -i N   Column number (starting from 0) which contains the
                             unique IDs. Enter -1 for auto-generating row IDs.
                             Default is 0 (first column)
+      --dataNoHeader, -n    dataSheet does not contain a header row
       --dataSkipCol N, -s N
                             Skip this number of rows from the top of the file
       --lockFile [LOCKFILE], -L [LOCKFILE]
@@ -361,12 +365,13 @@ Pasted below:
 
     Merge:
       --mergeSheet CSV, -m CSV
-                            Merge another spreadsheet to this file (can be used
-                            multiple times)
+                            Merge columns of another spreadsheet with current one
+                            (can be used multiple times)
       --mergeDelim DELIMITER, -M DELIMITER
                             The delimiter of mergeSheet. Default is comma (,)
       --mergeIdCol N, -I N  Column number (starting from 0) which contains the
                             unique IDs of the mergeSheet. Default is 0
+      --mergeNoHeader, -N   mergeSheet does not contain a header row
       --mergeSkipCol N, -S N
                             Skip this number of rows from the top of the file
 
@@ -377,6 +382,12 @@ Pasted below:
       --clean [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]], -C [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]
                             Consolidate and remove consolitated columns (can be
                             used multiple times)
+      --mode [append|overwrite|add], -e [append|overwrite|add]
+                            Consolidation mode for cells with the same header and
+                            row id. One of: append (old_value;new_value),
+                            overwrite or add (numerical addition). Default is
+                            'smart_append' (append only if value is not already
+                            present)
 
     Query:
       --columns [COLUMNS [COLUMNS ...]], -k [COLUMNS [COLUMNS ...]]
@@ -422,6 +433,11 @@ Generated using:
 Available at [Pysheet.html](http://htmlpreview.github.io/?https://github.com/isthisthat/Pysheet/blob/master/Pysheet.html)
 
 ## Changelog
+### v2.1
+* Added option to read in a spreadsheet that has no headers (-n)
+* Added option to control what happens when the user attempts to overwrite a cell (see --mode)
+* Fixed minor bugs
+
 ### v2.0
 * Added input/output from/to stdin/stdout
 * Indexing column can now be user-specified

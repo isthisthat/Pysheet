@@ -112,7 +112,7 @@ class TestFunctions(unittest.TestCase):
 'MYH11\n',
 'NUP98\n'\
 ]
-    cmd = "%s -d %s -i3 -D\\t -m %s --mergeD \\t -q" % (pysheet, ortho, cgc)
+    cmd = "%s -d %s -i3 -D\\t -m %s -M\\t -q" % (pysheet, ortho, cgc)
     p = Popen(cmd.split() + ['ZFIN ID','Tumour Types  (Somatic Mutations)=AML'], stdout=PIPE)
     myout = p.stdout.readlines()
     self.assertEqual(myout, out)
@@ -137,7 +137,7 @@ class TestFunctions(unittest.TestCase):
 'PTPN11\n',
 'RUNX1\n'\
 ]
-    cmd = "%s -d %s -i3 -D\\t -m %s --mergeD \\t -q" % (pysheet, ortho, cgc)
+    cmd = "%s -d %s -i3 -D\\t -m %s -M\\t -q" % (pysheet, ortho, cgc)
     p = Popen(cmd.split() + ['ZFIN ID','Tumour Types  (Somatic Mutations)~AML'], stdout=PIPE)
     myout = p.stdout.readlines()
     self.assertEqual(myout, out)
@@ -147,7 +147,7 @@ class TestFunctions(unittest.TestCase):
       os.remove(test)
     except OSError:
       pass
-    cmd = "%s -d %s -i3 -D\\t -m %s --mergeD \\t -C Phenotype Cancer Mut Other -k 5 2 3 1 10 -o %s" % (pysheet, ortho, cgc, test)
+    cmd = "%s -d %s -i3 -D\\t -m %s -M\\t -C Phenotype Cancer Mut Other -k 5 2 3 1 10 -o %s" % (pysheet, ortho, cgc, test)
     p = Popen(cmd.split(), stdout=PIPE)
     p.communicate()
 
