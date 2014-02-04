@@ -3,11 +3,11 @@
 """
 A library to read, write and manipulate spreadsheets
 
-Copyright (c) 2013, Stathis Kanterakis
-Last Update: Aug 2013
+Copyright (c) 2014, Stathis Kanterakis
+Last Update: Feb 2014
 """
 
-__version__ = "2.1"
+__version__ = "2.2"
 __author__  = "Stathis Kanterakis"
 __license__ = "LGPL"
 
@@ -41,64 +41,69 @@ def main():
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, \
     description="A library to read and write comma-separated (.csv) spreadsheets", epilog="""
+* = can be used multiple times
+
 Examples:
     %(prog)s -o mystudy.csv -w ID001 Age 38 ID002 Gender M
-        creates a blank sheet and adds two cell entries to it. Saves it as ./mystudy.csv
+        create a blank sheet and adds two cell entries to it. Saves it as ./mystudy.csv
     
-    %(prog)s -d mystudy.csv -c Items store -C Price price -C Availability avail -q Availability Price>0.5
-        consolidates Items across columns whose headers contain the keyword 'store'. Similarly for Price and Availability
-        then prints all IDs of Items with Price>0.5 and non-blank Availability
+    %(prog)s -d mystudy.csv -c Items store -q 'Availability Price>0.5'
+        consolidate Items across columns whose headers contain keyword 'store'
+        then print IDs for Items qith non-blank Availability and price greater than 0.5
     
     %(prog)s -d /path/table.txt -D'\\t' -o ./test/mystudy.csv -k 5 1-3 -v
-        reads a tab-delimited sheet and saves the columns 0 (assumed to be the IDs) 5,1,2,3 in csv format as ./test/mystudy.csv
+        read a tab-delimited sheet and save columns in the order:
+        0 (assumed to be IDs) 5,1,2 and 3, in csv format
 
     %(prog)s -d mystudy.csv -k
-        prints the entire data sheet to screen
+        print entire csv file to screen
 
     %(prog)s -d mystudy.csv -R 01001 Status -o mystudy.csv
-        removes the cell for ID '01001' under the 'Status' column
+        delete entry for ID '01001' and column 'Status'
 
     %(prog)s -d results.csv -w iteration_$i Result $val -o results.csv -L
-        adds a cell to the results sheet (locking the file before read/write access)
+        add an entry to the results sheet (locking before read/write access)
 
     %(prog)s -d table.txt -D '\\t' -i -1 -k 2 3 1 -o stdout -O '\\t' -nh | further_proc
-        rearranges the first 3 columns of a tab-delimited file and forwards the output to stdout for further processing
+        rearrange columns of tab-delimited file and forward output to stdout
 """)
     groupIO = parser.add_argument_group('Input/Output')
-    groupIO.add_argument('--dataSheet', '-d', type=readable, metavar="CSV", help='A delimited spreadsheet with unique IDs in the first column (or use -i) and headers in the first row. You may also use "stdin"')
-    groupIO.add_argument('--dataDelim', '-D', metavar='DELIMITER', help='The delimiter of the input dataSheet. Default is comma (,)', default=',')
-    groupIO.add_argument('--dataIdCol', '-i', type=int, metavar='N', help='Column number (starting from 0) which contains the unique IDs. Enter -1 for auto-generating row IDs. Default is 0 (first column)', default=0)
-    groupIO.add_argument('--dataNoHeader', '-n', action='store_true', help='dataSheet does not contain a header row')
-    groupIO.add_argument('--dataSkipCol', '-s', type=int, metavar='N', help='Skip this number of rows from the top of the file')
-    groupIO.add_argument('--lockFile', '-L', nargs='?', type=writeable, help="Prevents parallel jobs from overwriting the dataSheet. Use in cluster environments or asynchronous loops. \
-            Optionally, specify a filename (default is <dataSheet>.lock", const=True)
-    groupIO.add_argument('--outSheet', '-o', type=writeable, metavar="CSV", help='Output filename (may include path). You may also use "stdout"')
-    groupIO.add_argument('--outDelim', '-O', metavar='DELIMITER', help='The delimiter of the output Sheet. Default is comma (,)', default=',')
-    groupIO.add_argument('--outNoHeaders', '-nh', action='store_true', help="Don't output the header row at the top")
+    groupIO.add_argument('--dataSheet', '-d', type=readable, metavar="CSV", help='Delimited text file with unique IDs in first column (or use -i) and headers in first row. Or "stdin"')
+    groupIO.add_argument('--dataDelim', '-D', metavar='DELIMITER', help='Delimiter of input dataSheet. Default is comma', default=',')
+    groupIO.add_argument('--dataIdCol', '-i', type=int, metavar='N', help='Column number (starting from 0) of unique IDs. Or "-1" to auto-generate. Default is 0 (1st column)', default=0)
+    groupIO.add_argument('--dataNoHeader', '-n', action='store_true', help='dataSheet does not contain header row')
+    groupIO.add_argument('--dataSkipCol', '-s', type=int, metavar='N', help='Skip this number of rows from top of file')
+    groupIO.add_argument('--dataTrans', '-t', action='store_true', help='Read dataSheet transposed')
+    groupIO.add_argument('--outSheet', '-o', type=writeable, metavar="CSV", help='Output filename (may include path). Or "stdout"')
+    groupIO.add_argument('--outDelim', '-O', metavar='DELIMITER', help='Delimiter of output Sheet. Default is comma', default=',')
+    groupIO.add_argument('--outNoHeaders', '-nh', action='store_true', help="Don't output header row at the top")
     
     groupRW = parser.add_argument_group('Read/Write')
     groupRW_me = groupRW.add_mutually_exclusive_group()
     groupRW_me.add_argument('--write', '-w', nargs='*', metavar="ID HEADER VALUE", help="Write new cells")
-    groupRW_me.add_argument('--read', '-r', nargs='*', metavar="ID HEADER", help="Print value of cells to screen")
+    groupRW_me.add_argument('--read', '-r', nargs='*', metavar="ID HEADER", help="Print value of cells")
     groupRW_me.add_argument('--remove', '-R', nargs='*', metavar="ID HEADER", help="Remove cells")
+    groupRW.add_argument('--lockFile', '-L', nargs='?', type=writeable, help="Prevent parallel jobs from overwriting the dataSheet. Use in asynchronous loops. \
+            You may specify a filename (default is <dataSheet>.lock)", const=True)
 
     groupM = parser.add_argument_group('Merge')
-    groupM.add_argument('--mergeSheet', '-m', action='append', type=readable, metavar="CSV", help='Merge columns of another spreadsheet with current one (can be used multiple times)')
-    groupM.add_argument('--mergeDelim', '-M', action='append', metavar='DELIMITER', help='The delimiter of mergeSheet. Default is comma (,)')
-    groupM.add_argument('--mergeIdCol', '-I', action='append', type=int, metavar='N', help='Column number (starting from 0) which contains the unique IDs of the mergeSheet. Default is 0')
-    groupM.add_argument('--mergeNoHeader', '-N', action='store_true', help='mergeSheet does not contain a header row')
-    groupM.add_argument('--mergeSkipCol', '-S', action='append', type=int, metavar='N', help='Skip this number of rows from the top of the file')
+    groupM.add_argument('--mergeSheet', '-m', action='append', type=readable, metavar="CSV", help='Merge columns of other spreadsheet to dataSheet *')
+    groupM.add_argument('--mergeDelim', '-M', action='append', metavar='DELIMITER', help='Delimiter of mergeSheet. Default is comma *')
+    groupM.add_argument('--mergeIdCol', '-I', action='append', type=int, metavar='N', help='Column number (starting from 0) of unique IDs for mergeSheet. Default is 0 *')
+    groupM.add_argument('--mergeNoHeader', '-N', action='store_true', help='mergeSheet does not contain header row')
+    groupM.add_argument('--mergeSkipCol', '-S', action='append', type=int, metavar='N', help='Skip this number of rows from top of file *')
+    groupM.add_argument('--mergeTrans', '-T', action='store_true', help='Read mergeSheet transposed')
 
     groupC = parser.add_argument_group('Consolidate')
-    groupC.add_argument('--consolidate', '-c', nargs='*', action='append', metavar="HEADER KEYWORD1 KEYWORD2 etc", help='Consolidate columns according to keywords (can be used multiple times)')
-    groupC.add_argument('--clean', '-C', nargs='*', action='append', metavar="HEADER KEYWORD1 KEYWORD2 etc", help="Consolidate and remove consolitated columns (can be used multiple times)")
-    groupC.add_argument('--mode', '-e', nargs='?', choices=['append','overwrite','add','smart_append'], default='smart_append', metavar="append|overwrite|add", help="Consolidation mode for cells with the same header and row id. One of: append (old_value;new_value), overwrite or add (numerical addition). Default is 'smart_append' (append only if value is not already present)")
+    groupC.add_argument('--consolidate', '-c', nargs='*', action='append', metavar="HEADER KEYWORD1 KEYWORD2 etc", help='Consolidate columns according to keywords *')
+    groupC.add_argument('--clean', '-C', nargs='*', action='append', metavar="HEADER KEYWORD1 KEYWORD2 etc", help="Consolidate and remove consolitated columns *")
+    groupC.add_argument('--mode', '-e', nargs='?', choices=['append','overwrite','add','smart_append'], default='smart_append', metavar="append|overwrite|add", help="Consolidation mode for cells with same header and row id. One of: append (old_value;new_value), overwrite or add (numerical addition). Default is 'smart_append' (append only if value is not already present)")
 
     groupQ = parser.add_argument_group('Query')
-    groupQ.add_argument('--columns', '-k', nargs='*', help="Extracts specific columns from the dataSheet. e.g. '1-3 Age'. Default is print all columns")
-    groupQ.add_argument('--query', '-q', nargs='*', help="Extracts IDs that meet a query. e.g. 'Age>25 Group=Normal Validated' \
-            (NOTE: will not return IDs that have a non-blank entry in the special 'Exclude' column)")
-    groupQ.add_argument('--printHeaders', '-H', action='store_true', help="Prints out all column headers and their index")
+    groupQ.add_argument('--columns', '-k', nargs='*', help="Extract specific columns from dataSheet. Default: print all columns")
+    groupQ.add_argument('--query', '-q', nargs='*', help="Extract IDs that meet a query \
+            (NOTE: will not return IDs with entry in special 'Exclude' column)")
+    groupQ.add_argument('--printHeaders', '-H', action='store_true', help="Prints all column headers and their index")
     
     parser.add_argument('--wait', type=int, help=argparse.SUPPRESS) # this is for testing purposes. will sleep before writing to test locking stuff..
     parser.add_argument('catchall', nargs=argparse.REMAINDER, help=argparse.SUPPRESS)
@@ -212,7 +217,7 @@ Examples:
         logger.warn(">>> Creating a blank sheet in: %s" % args.outSheet)
 
     # now read the file
-    mycsv = Pysheet(args.dataSheet, delimiter=args.dataDelim, idColumn=args.dataIdCol, skip=args.dataSkipCol, hasHeader=(not args.dataNoHeader))
+    mycsv = Pysheet(args.dataSheet, delimiter=args.dataDelim, idColumn=args.dataIdCol, skip=args.dataSkipCol, hasHeader=(not args.dataNoHeader), transpose=args.dataTrans)
     
     # merge
     if args.mergeSheet:
@@ -252,7 +257,7 @@ Examples:
         #        return 1
         # now merge
         for m in range(len(args.mergeSheet)):
-            myothercsv = Pysheet(args.mergeSheet[m], delimiter=args.mergeDelim[m], idColumn=args.mergeIdCol[m], skip=args.mergeSkipCol[m], hasHeader=(not args.mergeNoHeader))
+            myothercsv = Pysheet(args.mergeSheet[m], delimiter=args.mergeDelim[m], idColumn=args.mergeIdCol[m], skip=args.mergeSkipCol[m], hasHeader=(not args.mergeNoHeader), transpose=args.mergeTrans)
             mycsv += myothercsv # __add__
             mycsv.contract(mode=args.mode) # merge same columns
 
@@ -385,7 +390,7 @@ class Pysheet:
     rows      = None # the dictionary that maps an ID to its row
     idColumn  = 0    # the column index that contains the IDs
     
-    def __init__(self, filename=None, delimiter=',', iterable=None, idColumn=None, skip=0, hasHeader=True):
+    def __init__(self, filename=None, delimiter=',', iterable=None, idColumn=None, skip=0, hasHeader=True, transpose=False):
         """initializes the object and reads in a sheet from a file or an iterable.
         Optionally specify the column number that contains the unique IDs (starting from 0)"""
         self.filename = filename
@@ -402,13 +407,13 @@ class Pysheet:
             self.delimiter = delimiter
         self.rows = {}
         if filename and (os.path.exists(filename) or filename == 'stdin'):
-            self.loadFile(self.filename, self.idColumn, skip, hasHeader)
+            self.loadFile(self.filename, self.idColumn, skip, hasHeader, transpose)
         elif iterable != None:
-            self.load(iterable, self.idColumn, skip, hasHeader)
+            self.load(iterable, self.idColumn, skip, hasHeader, transpose)
         else:
             self[self.HEADERS_ID] = ["ID"]
         
-    def loadFile(self, filename, idColumn=None, skip=0, hasHeader=True):
+    def loadFile(self, filename, idColumn=None, skip=0, hasHeader=True, transpose=False):
         """loads the sheet into a dictionary where the IDs in the first column are mapped to their rows.
         Optionally specify the column number that contains the unique IDs (starting from 0)"""
         try:
@@ -424,9 +429,9 @@ class Pysheet:
                 self.idColumn = int(idColumn)
             except ValueError as e:
                 self.idColumn = 0
-        self.load(reader, self.idColumn, skip, hasHeader)
+        self.load(reader, self.idColumn, skip, hasHeader, transpose)
     
-    def load(self, iterable, idColumn=None, skip=0, hasHeader=True):
+    def load(self, iterable, idColumn=None, skip=0, hasHeader=True, transpose=False):
         """creates a Pysheet object from an iterable.
         Optionally specify the column number that contains the unique IDs (starting from 0)"""
         try:
@@ -434,12 +439,37 @@ class Pysheet:
         except TypeError:
             raise PysheetException("%s is not iterable!" % iterable)
 
+        # do the skipping now
+        skip_counter = 0
+        while skip_counter < skip:
+            discard = iterator.next()
+            skip_counter += 1
+        # do transpose
+        if transpose:
+            cols = []
+            max_line_len = 0
+            try:
+                while True: # need to go through the file to remove comments and make sure it's square
+                    line = iterator.next()
+                    line_len = len(line)
+                    if line_len == 0 or str(line[0]).startswith(self.COMMENT_CHAR): # skip blanks and comments
+                        continue
+                    if line_len < max_line_len:
+                        line = line + [self.BLANK_VALUE] * (max_line_len - line_len)
+                    elif line_len > max_line_len: # we need to adjust all previous lines..
+                        for i in range(len(cols)):
+                            cols[i] += [self.BLANK_VALUE] * (line_len - max_line_len)
+                        max_line_len = line_len
+                    cols.append(line)
+            except StopIteration:
+                pass
+            iterator = iter(zip(*cols))
+
         if self.rows != None: # clear the object
             self.__init__(filename=None,delimiter=self.delimiter)
 
         row = 1
         head_len = -1
-        skip_counter = 0
         if idColumn != None:
             try:
                 self.idColumn = int(idColumn)
@@ -449,9 +479,6 @@ class Pysheet:
             while True:
                 line = iterator.next()
                 line_len = len(line)
-                if skip_counter < skip:
-                    skip_counter += 1
-                    continue
                 if line_len < self.MIN_LINE_LEN or str(line[0]).startswith(self.COMMENT_CHAR): # skip blank, short lines and comments
                     continue
                 if row == 1:
@@ -1098,7 +1125,7 @@ class Pysheet:
     def __str__(self):
         """returns a string representation of this object"""
         if self.isEmpty():
-            return "* empty *"
+            return "* empty *\n"
         header = [[x.replace('__','') for x in self.getHeaders()]]
         ids = self.getIds()
         ids.sort()
@@ -1107,7 +1134,10 @@ class Pysheet:
         ttable = Texttable()#self.MAX_PRINT_WIDTH)
         ttable.set_deco(Texttable.HEADER | Texttable.VLINES)
         ttable.add_rows(table)
-        return ttable.draw() + '\n'
+        try:
+            return ttable.draw() + '\n'
+        except ValueError as e:
+            return "* table too wide to display; choose less then %d columns *\n" % len(self)
         #return Pretty.indent(table, hasHeader=True, separateRows=False, headerChar='=', delim='    | ')#, wrapfunc=lambda x: Pretty.wrap_onspace_strict(x,22))
 
 class PysheetException(Exception):
@@ -1132,7 +1162,7 @@ def readable(f):
         return f.lower()
     f = os.path.realpath(f)
     if not os.path.isfile(f):
-        raise PysheetException("File does not exist!", f)
+        raise argparse.ArgumentTypeError("File does not exist: %s" % f)
     return f
 
 def writeable(f):
@@ -1141,7 +1171,7 @@ def writeable(f):
         return f.lower()
     f = os.path.realpath(f)
     if os.path.isfile(f) and not os.access(f, os.W_OK):# or not os.access(os.path.dirname(f), os.W_OK):
-        raise PysheetException("File is not writeable!", f)
+        raise argparse.ArgumentTypeError("File is not writeable: %s" % f)
     return f
 
 def flatten(l):
