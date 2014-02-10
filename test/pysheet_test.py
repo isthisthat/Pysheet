@@ -31,6 +31,8 @@ class TestFunctions(unittest.TestCase):
     self.assertFalse(p.isEmpty())
     self.assertEqual(p[1],[1, 'a', 'b', 'c'])
     self.assertEqual(p[3],None)
+    p = Pysheet(iterable=self.table, trans=True)
+    self.assertEqual(p.getHeaders(),['ID', '1', '2', '99', '88'])
 
   def test_columns(self):
     p = Pysheet()

@@ -18,7 +18,7 @@
 
 <dl><dt><a name="Pysheet-__getitem__"><strong>__getitem__</strong></a>(self, key, default<font color="#909090">=None</font>)</dt><dd><tt>gets&nbsp;the&nbsp;row&nbsp;of&nbsp;an&nbsp;ID&nbsp;from&nbsp;the&nbsp;dictionary</tt></dd></dl>
 
-<dl><dt><a name="Pysheet-__init__"><strong>__init__</strong></a>(self, filename<font color="#909090">=None</font>, delimiter<font color="#909090">=','</font>, iterable<font color="#909090">=None</font>, idColumn<font color="#909090">=None</font>, skip<font color="#909090">=0</font>, hasHeader<font color="#909090">=True</font>)</dt><dd><tt>initializes&nbsp;the&nbsp;object&nbsp;and&nbsp;reads&nbsp;in&nbsp;a&nbsp;sheet&nbsp;from&nbsp;a&nbsp;file&nbsp;or&nbsp;an&nbsp;iterable.<br>
+<dl><dt><a name="Pysheet-__init__"><strong>__init__</strong></a>(self, filename<font color="#909090">=None</font>, delimiter<font color="#909090">=','</font>, iterable<font color="#909090">=None</font>, idColumn<font color="#909090">=None</font>, skip<font color="#909090">=0</font>, hasHeader<font color="#909090">=True</font>, trans<font color="#909090">=False</font>)</dt><dd><tt>initializes&nbsp;the&nbsp;object&nbsp;and&nbsp;reads&nbsp;in&nbsp;a&nbsp;sheet&nbsp;from&nbsp;a&nbsp;file&nbsp;or&nbsp;an&nbsp;iterable.<br>
 Optionally&nbsp;specify&nbsp;the&nbsp;column&nbsp;number&nbsp;that&nbsp;contains&nbsp;the&nbsp;unique&nbsp;IDs&nbsp;(starting&nbsp;from&nbsp;0)</tt></dd></dl>
 
 <dl><dt><a name="Pysheet-__iter__"><strong>__iter__</strong></a>(self)</dt><dd><tt>returns&nbsp;an&nbsp;iterator&nbsp;over&nbsp;the&nbsp;ID:row&nbsp;items&nbsp;in&nbsp;the&nbsp;csv</tt></dd></dl>
@@ -81,10 +81,10 @@ lockedRows=True&nbsp;also&nbsp;returns&nbsp;rows&nbsp;whose&nbsp;ID&nbsp;starts&
 
 <dl><dt><a name="Pysheet-levels"><strong>levels</strong></a>(self, column, hasHeader<font color="#909090">=False</font>)</dt><dd><tt>returns&nbsp;a&nbsp;tuple&nbsp;containing&nbsp;(the&nbsp;discreet&nbsp;items&nbsp;or&nbsp;'levels',&nbsp;is&nbsp;a&nbsp;numeric&nbsp;list?,&nbsp;the&nbsp;number&nbsp;of&nbsp;levels)</tt></dd></dl>
 
-<dl><dt><a name="Pysheet-load"><strong>load</strong></a>(self, iterable, idColumn<font color="#909090">=None</font>, skip<font color="#909090">=0</font>, hasHeader<font color="#909090">=True</font>)</dt><dd><tt>creates&nbsp;a&nbsp;Pysheet&nbsp;object&nbsp;from&nbsp;an&nbsp;iterable.<br>
+<dl><dt><a name="Pysheet-load"><strong>load</strong></a>(self, iterable, idColumn<font color="#909090">=None</font>, skip<font color="#909090">=0</font>, hasHeader<font color="#909090">=True</font>, trans<font color="#909090">=False</font>)</dt><dd><tt>creates&nbsp;a&nbsp;Pysheet&nbsp;object&nbsp;from&nbsp;an&nbsp;iterable.<br>
 Optionally&nbsp;specify&nbsp;the&nbsp;column&nbsp;number&nbsp;that&nbsp;contains&nbsp;the&nbsp;unique&nbsp;IDs&nbsp;(starting&nbsp;from&nbsp;0)</tt></dd></dl>
 
-<dl><dt><a name="Pysheet-loadFile"><strong>loadFile</strong></a>(self, filename, idColumn<font color="#909090">=None</font>, skip<font color="#909090">=0</font>, hasHeader<font color="#909090">=True</font>)</dt><dd><tt>loads&nbsp;the&nbsp;sheet&nbsp;into&nbsp;a&nbsp;dictionary&nbsp;where&nbsp;the&nbsp;IDs&nbsp;in&nbsp;the&nbsp;first&nbsp;column&nbsp;are&nbsp;mapped&nbsp;to&nbsp;their&nbsp;rows.<br>
+<dl><dt><a name="Pysheet-loadFile"><strong>loadFile</strong></a>(self, filename, idColumn<font color="#909090">=None</font>, skip<font color="#909090">=0</font>, hasHeader<font color="#909090">=True</font>, trans<font color="#909090">=False</font>)</dt><dd><tt>loads&nbsp;the&nbsp;sheet&nbsp;into&nbsp;a&nbsp;dictionary&nbsp;where&nbsp;the&nbsp;IDs&nbsp;in&nbsp;the&nbsp;first&nbsp;column&nbsp;are&nbsp;mapped&nbsp;to&nbsp;their&nbsp;rows.<br>
 Optionally&nbsp;specify&nbsp;the&nbsp;column&nbsp;number&nbsp;that&nbsp;contains&nbsp;the&nbsp;unique&nbsp;IDs&nbsp;(starting&nbsp;from&nbsp;0)</tt></dd></dl>
 
 <dl><dt><a name="Pysheet-mergedValue"><strong>mergedValue</strong></a>(self, cellA, cellB, mode<font color="#909090">='smart_append'</font>)</dt><dd><tt>returns&nbsp;the&nbsp;merged&nbsp;value&nbsp;of&nbsp;two&nbsp;cells,&nbsp;according&nbsp;to&nbsp;mode:<br>

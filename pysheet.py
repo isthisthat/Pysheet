@@ -13,9 +13,8 @@ __license__ = "LGPL"
 
 import csv, sys, os, logging, re, traceback
 import argparse
-from numpy import reshape, array, ndarray, floating, zeros
+from numpy import reshape, ndarray, floating
 from types import ListType, IntType
-from errno import EPIPE
 from itertools import izip
 import cPickle
 from texttable import Texttable
@@ -77,7 +76,7 @@ Examples:
     groupIO.add_argument('--outSheet', '-o', type=writeable, metavar="CSV", help='Output filename (may include path). Or "stdout"')
     groupIO.add_argument('--outDelim', '-O', metavar='DELIMITER', help='Delimiter of output Sheet. Default is comma', default=',')
     groupIO.add_argument('--outNoHeaders', '-nh', action='store_true', help="Don't output header row at the top")
-    
+
     groupRW = parser.add_argument_group('Read/Write')
     groupRW_me = groupRW.add_mutually_exclusive_group()
     groupRW_me.add_argument('--write', '-w', nargs='*', metavar="ID HEADER VALUE", help="Write new cells")
@@ -104,7 +103,7 @@ Examples:
     groupQ.add_argument('--query', '-q', nargs='*', help="Extract IDs that meet a query \
             (NOTE: will not return IDs with entry in special 'Exclude' column)")
     groupQ.add_argument('--printHeaders', '-H', action='store_true', help="Prints all column headers and their index")
-    
+
     parser.add_argument('--wait', type=int, help=argparse.SUPPRESS) # this is for testing purposes. will sleep before writing to test locking stuff..
     parser.add_argument('catchall', nargs=argparse.REMAINDER, help=argparse.SUPPRESS)
 
@@ -128,7 +127,7 @@ Examples:
     # no arguments given
     if not len(sys.argv) > 1:
         parser.print_usage()
-        
+
     # are there leftover parameters?
     if args.catchall:
         logger.warn("!!! Unused parameters: %s" % flatten(args.catchall))
@@ -149,7 +148,7 @@ Examples:
     # LOCKING
     lock = False
     if args.lockFile:
-        
+
         # set lockFile and check that we are not overwriting critical stuff..
         if args.lockFile == True:
             args.lockFile = os.path.realpath(args.dataSheet + ".lock")
@@ -217,8 +216,8 @@ Examples:
         logger.warn(">>> Creating a blank sheet in: %s" % args.outSheet)
 
     # now read the file
-    mycsv = Pysheet(args.dataSheet, delimiter=args.dataDelim, idColumn=args.dataIdCol, skip=args.dataSkipCol, hasHeader=(not args.dataNoHeader), transpose=args.dataTrans)
-    
+    mycsv = Pysheet(args.dataSheet, delimiter=args.dataDelim, idColumn=args.dataIdCol, skip=args.dataSkipCol, hasHeader=(not args.dataNoHeader), trans=args.dataTrans)
+
     # merge
     if args.mergeSheet:
         # strangely, defaults don't work as expected when action='append' so we have to do it manually here...
@@ -257,11 +256,11 @@ Examples:
         #        return 1
         # now merge
         for m in range(len(args.mergeSheet)):
-            myothercsv = Pysheet(args.mergeSheet[m], delimiter=args.mergeDelim[m], idColumn=args.mergeIdCol[m], skip=args.mergeSkipCol[m], hasHeader=(not args.mergeNoHeader), transpose=args.mergeTrans)
+            myothercsv = Pysheet(args.mergeSheet[m], delimiter=args.mergeDelim[m], idColumn=args.mergeIdCol[m], skip=args.mergeSkipCol[m], hasHeader=(not args.mergeNoHeader), trans=args.mergeTrans)
             mycsv += myothercsv # __add__
             mycsv.contract(mode=args.mode) # merge same columns
 
-        
+
     # remove cells
     if args.remove:
         try:
@@ -284,7 +283,7 @@ Examples:
             logger.critical("!!! Cell entries must be of the form 'ID header': %s" % flatten(args.remove))
             return 1
 
-    
+
     # add cells
     if args.write:
         try:
@@ -300,7 +299,7 @@ Examples:
             logger.critical("!!! Cell entries must be of the form 'ID header value': %s" % flatten(args.write))
             return 1
 
-        
+
     # consolidate
     if args.clean:
         for c in args.clean:
@@ -310,7 +309,7 @@ Examples:
         for c in args.consolidate:
             logger.info(">>> Consolidating: %s" % flatten(c) if c else "same headers")
         mycsv.consolidate(args.consolidate, mode=args.mode)
-    
+
 
     # query
     # by columns
@@ -359,11 +358,11 @@ Examples:
             sleep(args.wait)
         mycsv.save(args.outSheet, args.outDelim, not args.outNoHeaders)
         logger.info("=== Sheet saved in: %s" % args.outSheet)
-    
+
     if lock:
         logger.debug(">>> Releasing lock...")
         os.remove(args.lockFile)
-            
+
     return 0
 
 
@@ -383,14 +382,14 @@ class Pysheet:
     BLANK_VALUE     = ''            # default value used for empty cells
     FLAG_VALUE      = '__flag__'    # flags a row for filtering
     MAX_PRINT_WIDTH = 200           # the max width of a printout on the command line
-    
+
     # parameters
     filename  = None # the input/output path and name
     delimiter = None # the sheet delimiter
     rows      = None # the dictionary that maps an ID to its row
     idColumn  = 0    # the column index that contains the IDs
-    
-    def __init__(self, filename=None, delimiter=',', iterable=None, idColumn=None, skip=0, hasHeader=True, transpose=False):
+
+    def __init__(self, filename=None, delimiter=',', iterable=None, idColumn=None, skip=0, hasHeader=True, trans=False):
         """initializes the object and reads in a sheet from a file or an iterable.
         Optionally specify the column number that contains the unique IDs (starting from 0)"""
         self.filename = filename
@@ -407,13 +406,13 @@ class Pysheet:
             self.delimiter = delimiter
         self.rows = {}
         if filename and (os.path.exists(filename) or filename == 'stdin'):
-            self.loadFile(self.filename, self.idColumn, skip, hasHeader, transpose)
+            self.loadFile(self.filename, self.idColumn, skip, hasHeader, trans)
         elif iterable != None:
-            self.load(iterable, self.idColumn, skip, hasHeader, transpose)
+            self.load(iterable, self.idColumn, skip, hasHeader, trans)
         else:
             self[self.HEADERS_ID] = ["ID"]
-        
-    def loadFile(self, filename, idColumn=None, skip=0, hasHeader=True, transpose=False):
+
+    def loadFile(self, filename, idColumn=None, skip=0, hasHeader=True, trans=False):
         """loads the sheet into a dictionary where the IDs in the first column are mapped to their rows.
         Optionally specify the column number that contains the unique IDs (starting from 0)"""
         try:
@@ -429,9 +428,9 @@ class Pysheet:
                 self.idColumn = int(idColumn)
             except ValueError as e:
                 self.idColumn = 0
-        self.load(reader, self.idColumn, skip, hasHeader, transpose)
-    
-    def load(self, iterable, idColumn=None, skip=0, hasHeader=True, transpose=False):
+        self.load(reader, self.idColumn, skip, hasHeader, trans)
+
+    def load(self, iterable, idColumn=None, skip=0, hasHeader=True, trans=False):
         """creates a Pysheet object from an iterable.
         Optionally specify the column number that contains the unique IDs (starting from 0)"""
         try:
@@ -445,7 +444,7 @@ class Pysheet:
             discard = iterator.next()
             skip_counter += 1
         # do transpose
-        if transpose:
+        if trans:
             cols = []
             max_line_len = 0
             try:
@@ -520,11 +519,11 @@ class Pysheet:
         except Exception as e:
             printStackTrace()
             raise PysheetException(e.message)
-    
+
     def __iter__(self):
         """returns an iterator over the ID:row items in the csv"""
         return self.rows.iteritems()
-    
+
     def __len__(self):
         """returns the length of the header row in the dictionary"""
         return len(self.getHeaders())
@@ -532,11 +531,11 @@ class Pysheet:
     def height(self):
         """returns the number of rows in the dictionary"""
         return len(self.rows)
-    
+
     def pop(self, x, default=None):
         """pops an item out of the dictionary"""
         return self.rows.pop(clean(x),default)
-    
+
     def keys(self, headers=True, exclude=True, lockedRows=True):
         """returns a list of the keys in the dictionary.
         headers=True adds columnheaders to the list returned
@@ -545,7 +544,7 @@ class Pysheet:
         return [self[x][self.idColumn] for x in self.rows.keys() if \
                 (headers or x != self.HEADERS_ID) and (lockedRows or not x.startswith('__')) and \
                 (not exclude or not self.excluded(x))]
-    
+
     def getIds(self):
         """returns all keys of the dictionary, except the header key and any IDs starting with '__'"""
         return self.keys(headers=False, exclude=True, lockedRows=False)
@@ -555,19 +554,19 @@ class Pysheet:
         return self.rows.get(clean(sanitize(key)), default)
     def get(self, key, default=None):
         """gets the row of an ID from the dictionary"""
-        return self[key]
-        
+        return self.__getitem__(key, default)
+
     def __setitem__(self, key, row):
         """changes the row of an ID in the dictionary"""
         self.rows[clean(key)] = row
     def set(self, key, row):
         """changes the row of an ID in the dictionary"""
         self[key] = row
-    
+
     def __delitem__(self, key):
         """deletes a row from the dictionary"""
         del self.rows[clean(key)]
-    
+
     def headerIndex(self, header):
         """returns the index of a header in the dictionary"""
         # if a column number, return the index
@@ -581,18 +580,18 @@ class Pysheet:
                 if header >= 0 and header < len(self):
                     return header
         return -1 # all other cases return -1 to indicate error
-    
+
     def getHeaders(self): #, lockedHeaders=True):
         """returns the headers of the columns in the dictionary.
         If lockedHeaders=False, skips the headers starting with '__'"""
         #if not lockedHeaders:
         #    return [l for l in self[self.HEADERS_ID] if not l.startswith('__')]
         return self[self.HEADERS_ID]
-    
+
     def containsColumn(self, header):
         """True if header exists in the csv header list"""
         return self.headerIndex(header) > -1
-    
+
     def addCell(self, key, header=None, value=None, mode='overwrite'):
         """adds a single cell in the dictionary. mode can be 'smart_append'
         (adds a value if not already present), 'append', 'overwrite' and
@@ -613,7 +612,7 @@ class Pysheet:
                 value = self.BLANK_VALUE
             # add the value using the correct mode
             self[cleankey][self.headerIndex(header)] = self.mergedValue(self[cleankey][self.headerIndex(header)], value, mode=mode)
-    
+
     def removeCell(self, key, header=None):
         """deletes a cell or a row from the dictionary"""
         ret = None
@@ -651,7 +650,7 @@ class Pysheet:
             # did we insert before the idColumn?
             if index <= self.idColumn:
                 self.idColumn += 1
-    
+
     def grab(self, key=None, header=None, level=None):
         """grabs a cell (key + header), a whole row (just key), or all keys that correspond to 'level' (header + level) from the dictionary. level='ALL' is valid"""
         if key != None:
@@ -677,15 +676,15 @@ class Pysheet:
             return ret
         else:
             raise PysheetException("grab either requires a key, or a header AND a level!")
-    
+
     def __add__(self, other, mergeHeaders=False):
         """merges two Pysheets together"""
         if not isinstance(other, self.__class__):
             try:
                 other = Pysheet(iterable=other) # if we have an iterable, make a default Pysheet on the fly
             except Exception:
-                raise PysheetException("I don't know how to add this. Please use a Pysheet")
                 printStackTrace()
+                raise PysheetException("I don't know how to add this. Please use a Pysheet")
         oldlen = len(self)
         # merge the existing IDs
         for i in self.rows.keys():
@@ -703,7 +702,7 @@ class Pysheet:
         if mergeHeaders:
             self.contract()
         return self
-    
+
     def excluded(self, key):
         """returns True if an item's exclusion header is non-blank"""
         if key == self.HEADERS_ID:
@@ -797,7 +796,7 @@ class Pysheet:
         # check if we have columns to join
         if not cols[0]:
             return [self.keys(headers=False)] # return all IDs
-        
+
         # case we have some columns to join
         ret = []
         for i in self.rows.keys():
@@ -818,7 +817,7 @@ class Pysheet:
                 continue
             ret.append([self[i][self.idColumn], "_".join([str(x) for x in hybrid if not self.isBlank(x)])]) # append the ID and a join of the requested columns
         return transpose(ret) # transpose so that [0] are IDs and [1] is group assignment
-    
+
     def getColumns(self, cols=None, blanks=False, exclude=True):
         """extracts columns and corresponding IDs from the dictionary (with column headers)
         returns requested columns, row-by-row. Supports operators like cols='age>20'. To get multiple columns e.g. set cols=[3,6,5]
@@ -881,7 +880,7 @@ class Pysheet:
             elif blanks or not self.BLANK_VALUE in add: # if all values there, append to return
                 ret.append([self[i][self.idColumn]] + add)
         return ret
-    
+
     def expand(self):
         """blank-pads to make all rows as long as the headers"""
         headlen = len(self)
@@ -890,7 +889,7 @@ class Pysheet:
             assert thislen <= headlen, "Error in dictionary row %s. Greater than length of headers row (%d): %s" % (i, headlen, self[i])
             if thislen < headlen:
                 self[i] += [self.BLANK_VALUE] * (headlen - thislen)
-    
+
     def contract(self, mode='overwrite'):
         """concatenates columns that have the same header. mode can be:
         'append', 'overwrite', 'smart_append' (consolidates values if not already present)
@@ -909,18 +908,18 @@ class Pysheet:
                                 self.rename(self[k][i], key=k) # re-index just in case
                             else:
                                 self[k][i] = self.mergedValue(self[k][i], self[k][j], mode=mode)
-                            
+
         # now delete duplicate columns
         if deleteme:
             self.removeColumns(deleteme)
-    
+
     def zeroFill(self, zero=0):
         """fills blank cells with zero"""
         for k in self.rows.keys():
             for h in range(len(self[k])):
                 if self[k][h] in [None, [], 0, '', self.BLANK_VALUE]:
                     self[k][h]=zero
-        
+
     def removeColumns(self, cols):
         """removes columns from the dictionary by index, starting from 0 (not by header name)"""
         if cols:
@@ -941,7 +940,7 @@ class Pysheet:
             for k in self.rows.keys():
                 for c in cols:
                     del self[k][c]
-    
+
     def rename(self, newName, header=None, key=None):
         """renames a column header, or a row key (not both)"""
         if header:
@@ -961,7 +960,7 @@ class Pysheet:
                     self[cleanNewKey] = row
             else:
                 raise PysheetException("Cannot rename. No such key: %s" % key)
-        
+
     def consolidate(self, consolidations, cleanUp=False, mode='smart_append'):
         """consolidates columns according to keywords. consolidations is a 2D list of [[header, keyword, keyword, ...], ...]
         Use cleanUp=True to delete the consolidated columns after consolidation
@@ -969,7 +968,7 @@ class Pysheet:
 
         # contract first to deal with same name headers!
         self.contract(mode=mode)
-        
+
         # check what the user gave us
         if not consolidations or len(consolidations) == 0 or len(consolidations[0]) == 0:
             return
@@ -977,7 +976,7 @@ class Pysheet:
             consolidations = [consolidations]
         if not isList(consolidations[0]):
             consolidations = [consolidations]
-        
+
         # now insert the new headers
         consolidationHeaders = izip(*consolidations).next() # get the new headers
         for header in consolidationHeaders:
@@ -1009,7 +1008,7 @@ class Pysheet:
         # now delete copied columns?
         if cleanUp:
             self.removeColumns(deleteme)
-    
+
     def mergedValue(self, cellA, cellB, mode='smart_append'):
         """returns the merged value of two cells, according to mode:
         'smart_append' (appends new value if not already present), 'append', 'overwrite' and 'add' (adds up values if numeric)"""
@@ -1103,13 +1102,13 @@ class Pysheet:
                 elif isNumber(row[col]):
                     line.append(str(row[col]))
                 else:
-                    line.append(cPickle.dmps(row[col]))
+                    line.append(cPickle.dumps(row[col]))
             ret.append(line)
         writer.writerows(ret)
         # set the filename
         if not self.filename:
             self.filename = output
-    
+
     def isEmpty(self):
         """returns True if this sheet is blank"""
         return len(self)<=1 and self.height()<=1
@@ -1117,7 +1116,8 @@ class Pysheet:
     def isBlank(self, cell):
         """returns True if cell is considered blank"""
         if isList(cell):
-            return len(filter((lambda i : not self.isBlank(i)),cell)) == 0
+            return reduce(lambda a,b: self.isBlank(a) and self.isBlank(b), cell)
+            #len(filter((lambda i : not self.isBlank(i)) for i in cell)) == 0
         if cell in [None, '', self.BLANK_VALUE]:
             return True
         return False
@@ -1149,6 +1149,7 @@ class PysheetException(Exception):
             self.message = "Error %s in file %s at %d" % (msg, fname, line)
         else:
             self.message = "Error %s in file %s" % (msg, fname)
+        super(PysheetException, self).__init__(self.message)
     def __str__(self):
         return repr(self.message)
 
@@ -1189,8 +1190,10 @@ def isList(x):
 def isNumber(x, strOk=False):
     """returns True if x is a number (or list of numbers)"""
     if isList(x):
-        return len(filter((lambda i : not isNumber(i, strOk=strOk)),x)) == 0
-    if strOk: x = tryNumber(x)
+        return reduce(lambda a,b: isNumber(a, strOk=strOk) and isNumber(b, strOk=strOk), x)
+        #len(filter((lambda i : not isNumber(i, strOk=strOk)),x)) == 0
+    if strOk:
+        x = tryNumber(x)
     return isinstance(x, (int, long, float, floating))
 
 def tryNumber(x):
@@ -1233,5 +1236,6 @@ def sanitize(s):
     return p.sub('_',str(s).strip())
 
 
-if __name__ == '__main__': exit(main())
+if __name__ == '__main__':
+    exit(main())
 
