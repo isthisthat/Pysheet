@@ -429,7 +429,7 @@ Available at [Pysheet.html](http://htmlpreview.github.io/?https://github.com/ist
 ## Changelog
 ### v2.2
 * Added option to transpose input (-t)
-* If table is to wide to print in the terminal, give a message instead of an exception
+* If table is too wide to print in the terminal, give a message instead of an exception
 * Cleaned up help a bit and used some of pylint's suggestions
 
 ### v2.1
