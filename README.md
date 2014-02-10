@@ -427,6 +427,11 @@ Generated using:
 Available at [Pysheet.html](http://htmlpreview.github.io/?https://github.com/isthisthat/Pysheet/blob/master/Pysheet.html)
 
 ## Changelog
+### v2.2
+* Added option to transpose input (-t)
+* If table is to wide to print in the terminal, give a message instead of an exception
+* Cleaned up help a bit and used some of pylint's suggestions
+
 ### v2.1
 * Added option to read in a spreadsheet that has no headers (-n)
 * Added option to control what happens when the user attempts to overwrite a cell (see --mode)
