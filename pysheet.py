@@ -7,7 +7,7 @@ Copyright (c) 2014, Stathis Kanterakis
 Last Update: Feb 2014
 """
 
-__version__ = "2.3"
+__version__ = "3.0"
 __author__  = "Stathis Kanterakis"
 __license__ = "LGPL"
 
@@ -17,7 +17,6 @@ from numpy import reshape, floating
 from types import IntType
 from itertools import izip
 import cPickle
-from texttable import Texttable
 from time import sleep
 from datetime import datetime
 from random import random
@@ -1174,6 +1173,10 @@ class Pysheet:
         """returns a string representation of this object"""
         if self.isEmpty():
             return "* empty *\n"
+        try:
+            from texttable import Texttable
+        except ImportError:
+            return "* Texttable is required to print stuff *"
         header = [[x.replace('__','') for x in self.getHeaders()]]
         ids = self.getIds()
         ids.sort()
