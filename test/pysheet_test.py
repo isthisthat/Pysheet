@@ -101,7 +101,7 @@ class TestFunctions(unittest.TestCase):
 '             | oncogene     |              |              |              \n',
 '             | homolog 1    |              |              |              \n'\
 ]
-    cmd = "%s -d %s -D\\t -k 1-4" % (pysheet, cgc)
+    cmd = "%s -d %s -D \\t -k 1-4" % (pysheet, cgc)
     p = Popen(cmd.split(), stdout=PIPE)
     myout = p.stdout.readlines()
     self.assertEqual(myout[:9], out)
@@ -114,7 +114,7 @@ class TestFunctions(unittest.TestCase):
 'MYH11\n',
 'NUP98\n'\
 ]
-    cmd = "%s -d %s -i3 -D\\t -m %s -M\\t -q" % (pysheet, ortho, cgc)
+    cmd = "%s -d %s %s -i 3 0 -D \\t \\t -q" % (pysheet, ortho, cgc)
     p = Popen(cmd.split() + ['ZFIN ID','Tumour Types  (Somatic Mutations)=AML'], stdout=PIPE)
     myout = p.stdout.readlines()
     self.assertEqual(myout, out)
@@ -139,7 +139,7 @@ class TestFunctions(unittest.TestCase):
 'PTPN11\n',
 'RUNX1\n'\
 ]
-    cmd = "%s -d %s -i3 -D\\t -m %s -M\\t -q" % (pysheet, ortho, cgc)
+    cmd = "%s -d %s %s -i 3 0 -D \\t \\t -q" % (pysheet, ortho, cgc)
     p = Popen(cmd.split() + ['ZFIN ID','Tumour Types  (Somatic Mutations)~AML'], stdout=PIPE)
     myout = p.stdout.readlines()
     self.assertEqual(myout, out)
@@ -149,7 +149,7 @@ class TestFunctions(unittest.TestCase):
       os.remove(test)
     except OSError:
       pass
-    cmd = "%s -d %s -i3 -D\\t -m %s -M\\t -C Phenotype Cancer Mut Other -k 5 2 3 1 10 -o %s" % (pysheet, ortho, cgc, test)
+    cmd = "%s -d %s %s -i 3 0 -D \\t \\t -C Phenotype Cancer Mut Other -k 5 2 3 1 10 -o %s" % (pysheet, ortho, cgc, test)
     p = Popen(cmd.split(), stdout=PIPE)
     p.communicate()
 
@@ -187,6 +187,8 @@ class TestFunctions(unittest.TestCase):
     # check that we have cleaned up the lock..
     self.assertRaises(OSError, os.remove, test_lock)
 
+    # clean up
+    os.unlink(test)
     
 
 #if __name__ == '__main__': unittest.main()

@@ -86,9 +86,9 @@ We wish to join these two files by Gene Symbol. In the first file, this is the 4
 
     -i3
 
-Let's merge these files in memory and print the resulting headers. We'll use the `--mergeSheet`/`-m`, `--mergeDelim`/`-M` and `--printHeaders`/`-H` arguments in the command:
+Let's merge these files in memory and print the resulting headers. We'll merge just by providing additional inputs ans then use the `--printHeaders`/`-H` argument in the command:
 
-    ./pysheet.py -d pheno_2013.05.15.txt -i3 -D'\t' -m cancer_gene_census.tsv -M '\t' -H
+    ./pysheet.py -d pheno_2013.05.15.txt cancer_gene_census.tsv -i 3 0 -D '\t' '\t' -H
 
 The output should be:
 
@@ -120,7 +120,7 @@ Let's manipulate the merged file a bit more before we save it. We would like to 
 
 Let's see the resulting headers:
 
-    ./pysheet.py -d test/pheno_2013.05.15.txt -i3 -D'\t' -m test/cancer_gene_census.tsv -M '\t' -C Phenotype Cancer Mut Other -H
+    ./pysheet.py -d pheno_2013.05.15.txt cancer_gene_census.tsv -i 3 0 -D '\t' '\t' -C Phenotype Cancer Mut Other -H
 
 Output:
 
@@ -157,7 +157,7 @@ Have been removed and replaced by:
 The double underscore `__` in front of the header name indicates a "locked" header, i.e. do not use this header in further consolidations. But the header can still be called without the double underscore and is also printed without it as you will see below.
 Let's visualise a few lines from this column:
 
-    ./pysheet.py -d pheno_2013.05.15.txt -i3 -D'\t' -m cancer_gene_census.tsv -M '\t' -C Phenotype Cancer Mut Other -k Phenotype | head
+    ./pysheet.py -d pheno_2013.05.15.txt cancer_gene_census.tsv -i 3 0 -D '\t' '\t' -C Phenotype Cancer Mut Other -k Phenotype | head
 
 Output:
 
@@ -180,7 +180,7 @@ Now we'd like to reshuffle columns a bit, so we'll use this ordering:
 
 And finally output to a comma-separated file _cancer\_zebrafish.csv_. Use the command:
 
-    ./pysheet.py -d pheno_2013.05.15.txt -D3 -l'\t' -m cancer_gene_census.tsv -D '\t' -C Phenotype Cancer Mut Other -k 5 2 3 1 10 -o cancer_zebrafish.csv
+    ./pysheet.py -d pheno_2013.05.15.txt cancer_gene_census.tsv -i 3 0 -D '\t' '\t' -C Phenotype Cancer Mut Other -k 5 2 3 1 10 -o cancer_zebrafish.csv
 
 Let's print the headers of this file:
 
@@ -305,15 +305,17 @@ Generated using:
 
 Pasted below:
 
-    usage: pysheet.py [-h] [--dataSheet CSV] [--dataDelim DELIMITER]
-                      [--dataIdCol N] [--dataNoHeader] [--dataSkipCol N]
-                      [--dataTrans] [--outSheet CSV] [--outDelim DELIMITER]
-                      [--outNoHeaders]
+    usage: pysheet.py [-h] [--dataSheet [FILE [FILE ...]]]
+                      [--dataDelim [CHAR [CHAR ...]]]
+                      [--dataIdCol [INT [INT ...]]]
+                      [--dataNoHeader [Y|N [Y|N ...]]]
+                      [--dataSkipCol [INT [INT ...]]]
+                      [--dataTrans [Y|N [Y|N ...]]] [--outSheet FILE]
+                      [--outDelim CHAR] [--outNoHeaders] [--outTrans]
+                      [--lockFile [LOCKFILE]]
                       [--write [ID HEADER VALUE [ID HEADER VALUE ...]] | --read
                       [ID HEADER [ID HEADER ...]] | --remove
-                      [ID HEADER [ID HEADER ...]]] [--lockFile [LOCKFILE]]
-                      [--mergeSheet CSV] [--mergeDelim DELIMITER] [--mergeIdCol N]
-                      [--mergeNoHeader] [--mergeSkipCol N] [--mergeTrans]
+                      [ID HEADER [ID HEADER ...]]]
                       [--consolidate [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]]
                       [--clean [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]]
                       [--mode [append|overwrite|add]]
@@ -321,7 +323,7 @@ Pasted below:
                       [--query [QUERY [QUERY ...]]] [--printHeaders] [--version]
                       [--verbose]
 
-    A library to read and write comma-separated (.csv) spreadsheets
+    A library to read and write delimited text files
 
     optional arguments:
       -h, --help            show this help message and exit
@@ -329,46 +331,39 @@ Pasted below:
       --verbose, -v         verbosity level
 
     Input/Output:
-      --dataSheet CSV, -d CSV
+      --dataSheet [FILE [FILE ...]], -d [FILE [FILE ...]]
                             Delimited text file with unique IDs in first column
-                            (or use -i) and headers in first row. Or "stdin"
-      --dataDelim DELIMITER, -D DELIMITER
-                            Delimiter of input dataSheet. Default is comma
-      --dataIdCol N, -i N   Column number (starting from 0) of unique IDs. Or "-1"
-                            to auto-generate. Default is 0 (1st column)
-      --dataNoHeader, -n    dataSheet does not contain header row
-      --dataSkipCol N, -s N
-                            Skip this number of rows from top of file
-      --dataTrans, -t       Read dataSheet transposed
-      --outSheet CSV, -o CSV
-                            Output filename (may include path). Or "stdout"
-      --outDelim DELIMITER, -O DELIMITER
+                            (or use -i) and headers in first row. Or "stdin *"
+      --dataDelim [CHAR [CHAR ...]], -D [CHAR [CHAR ...]]
+                            Delimiter of dataSheet. Default is comma *
+      --dataIdCol [INT [INT ...]], -i [INT [INT ...]]
+                            Column number (starting from 0) of unique IDs. Or "-1"
+                            to auto-generate. Default is 0 (1st column) *
+      --dataNoHeader [Y|N [Y|N ...]], -n [Y|N [Y|N ...]]
+                            dataSheet does not contain header row *
+      --dataSkipCol [INT [INT ...]], -s [INT [INT ...]]
+                            Skip this number of rows from top of file *
+      --dataTrans [Y|N [Y|N ...]], -t [Y|N [Y|N ...]]
+                            Read dataSheet transposed *
+      --outSheet FILE, -o FILE
+                            Output filename (may include path). Or "stdout" *
+      --outDelim CHAR, -O CHAR
                             Delimiter of output Sheet. Default is comma
-      --outNoHeaders, -nh   Don't output header row at the top
+      --outNoHeaders, -N    Don't output header row at the top
+      --outTrans, -T        Write outSheet transposed
+      --lockFile [LOCKFILE], -L [LOCKFILE]
+                            Read/write lock to prevent parallel jobs from
+                            overwriting the dataSheet. Use in asynchronous loops.
+                            You may specify a filename (default is
+                            <outSheet>.lock)
 
     Read/Write:
       --write [ID HEADER VALUE [ID HEADER VALUE ...]], -w [ID HEADER VALUE [ID HEADER VALUE ...]]
-                            Write new cells
+                            Write new cells *
       --read [ID HEADER [ID HEADER ...]], -r [ID HEADER [ID HEADER ...]]
-                            Print value of cells
+                            Print value of cells *
       --remove [ID HEADER [ID HEADER ...]], -R [ID HEADER [ID HEADER ...]]
-                            Remove cells
-      --lockFile [LOCKFILE], -L [LOCKFILE]
-                            Prevent parallel jobs from overwriting the dataSheet.
-                            Use in asynchronous loops. You may specify a filename
-                            (default is <dataSheet>.lock)
-
-    Merge:
-      --mergeSheet CSV, -m CSV
-                            Merge columns of other spreadsheet to dataSheet *
-      --mergeDelim DELIMITER, -M DELIMITER
-                            Delimiter of mergeSheet. Default is comma *
-      --mergeIdCol N, -I N  Column number (starting from 0) of unique IDs for
-                            mergeSheet. Default is 0 *
-      --mergeNoHeader, -N   mergeSheet does not contain header row
-      --mergeSkipCol N, -S N
-                            Skip this number of rows from top of file *
-      --mergeTrans, -T      Read mergeSheet transposed
+                            Remove cells *
 
     Consolidate:
       --consolidate [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]], -c [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]
@@ -390,7 +385,7 @@ Pasted below:
                             IDs with entry in special 'Exclude' column)
       --printHeaders, -H    Prints all column headers and their index
 
-    * = can be used multiple times
+    * = can take multiple arguments
 
     Examples:
         pysheet.py -o mystudy.csv -w ID001 Age 38 ID002 Gender M
@@ -404,8 +399,8 @@ Pasted below:
             read a tab-delimited sheet and save columns in the order:
             0 (assumed to be IDs) 5,1,2 and 3, in csv format
 
-        pysheet.py -d mystudy.csv -k
-            print entire csv file to screen
+        pysheet.py -d mystudy.csv mystudy2.csv mystudy3.csv -i 2 2 3 -k
+            merge dataSheets specifying the ID column for each & print resulting table to screen
 
         pysheet.py -d mystudy.csv -R 01001 Status -o mystudy.csv
             delete entry for ID '01001' and column 'Status'
@@ -415,7 +410,6 @@ Pasted below:
 
         pysheet.py -d table.txt -D '\t' -i -1 -k 2 3 1 -o stdout -O '\t' -nh | further_proc
             rearrange columns of tab-delimited file and forward output to stdout
-
 
 ### Pydoc
 Generated using:
@@ -427,6 +421,12 @@ Generated using:
 Available at [Pysheet.html](http://htmlpreview.github.io/?https://github.com/isthisthat/Pysheet/blob/master/Pysheet.html)
 
 ## Changelog
+### v3.0
+* Many speed and stability improvements
+* Moved merge options to just be additional arguments of the data options
+* Using a unique ID for all auto-IDs
+* Fixed bug when merging files with auto-IDs
+
 ### v2.2
 * Added option to transpose input (-t)
 * If table is too wide to print in the terminal, give a message instead of an exception

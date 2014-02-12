@@ -1,20 +1,20 @@
 #!/usr/bin/env python
 
 """
-A library to read, write and manipulate spreadsheets
+A library to read, write and manipulate delimited text files
 
 Copyright (c) 2014, Stathis Kanterakis
 Last Update: Feb 2014
 """
 
-__version__ = "2.2"
+__version__ = "2.3"
 __author__  = "Stathis Kanterakis"
 __license__ = "LGPL"
 
 import csv, sys, os, logging, re, traceback
 import argparse
-from numpy import reshape, ndarray, floating
-from types import ListType, IntType
+from numpy import reshape, floating
+from types import IntType
 from itertools import izip
 import cPickle
 from texttable import Texttable
@@ -27,9 +27,14 @@ from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE,SIG_DFL)
 
 # unbuffered stdout
-unbuffered = os.fdopen(sys.stdout.fileno(), 'w', 0)
-sys.stdout = unbuffered
+UNBUFF = os.fdopen(sys.stdout.fileno(), 'w', 0)
+sys.stdout = UNBUFF
 
+# Should we profile the code?
+PROFILE = False
+PROFILE_LIMIT = 0.1 # %
+PROFILE_DAT = 'profile.dat'
+PROFILE_TXT = 'profile.txt'
 
 ####################################
 ########### CLI WRAPPER ############
@@ -39,8 +44,8 @@ def main():
     """parse command line input and call appropriate functions"""
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, \
-    description="A library to read and write comma-separated (.csv) spreadsheets", epilog="""
-* = can be used multiple times
+    description="A library to read and write delimited text files", epilog="""
+* = can take multiple arguments
 
 Examples:
     %(prog)s -o mystudy.csv -w ID001 Age 38 ID002 Gender M
@@ -54,44 +59,37 @@ Examples:
         read a tab-delimited sheet and save columns in the order:
         0 (assumed to be IDs) 5,1,2 and 3, in csv format
 
-    %(prog)s -d mystudy.csv -k
-        print entire csv file to screen
+    %(prog)s -d mystudy.csv mystudy2.csv mystudy3.csv -i 2 2 3 -k
+        merge dataSheets specifying the ID column for each & print resulting table to screen
 
     %(prog)s -d mystudy.csv -R 01001 Status -o mystudy.csv
         delete entry for ID '01001' and column 'Status'
 
-    %(prog)s -d results.csv -w iteration_$i Result $val -o results.csv -L
-        add an entry to the results sheet (locking before read/write access)
+    touch res.csv; %(prog)s -d res.csv -w iteration_$i Result $val -o res.csv -L
+        add an entry to the results file, locking before read/write access
 
     %(prog)s -d table.txt -D '\\t' -i -1 -k 2 3 1 -o stdout -O '\\t' -nh | further_proc
         rearrange columns of tab-delimited file and forward output to stdout
 """)
     groupIO = parser.add_argument_group('Input/Output')
-    groupIO.add_argument('--dataSheet', '-d', type=readable, metavar="CSV", help='Delimited text file with unique IDs in first column (or use -i) and headers in first row. Or "stdin"')
-    groupIO.add_argument('--dataDelim', '-D', metavar='DELIMITER', help='Delimiter of input dataSheet. Default is comma', default=',')
-    groupIO.add_argument('--dataIdCol', '-i', type=int, metavar='N', help='Column number (starting from 0) of unique IDs. Or "-1" to auto-generate. Default is 0 (1st column)', default=0)
-    groupIO.add_argument('--dataNoHeader', '-n', action='store_true', help='dataSheet does not contain header row')
-    groupIO.add_argument('--dataSkipCol', '-s', type=int, metavar='N', help='Skip this number of rows from top of file')
-    groupIO.add_argument('--dataTrans', '-t', action='store_true', help='Read dataSheet transposed')
-    groupIO.add_argument('--outSheet', '-o', type=writeable, metavar="CSV", help='Output filename (may include path). Or "stdout"')
-    groupIO.add_argument('--outDelim', '-O', metavar='DELIMITER', help='Delimiter of output Sheet. Default is comma', default=',')
-    groupIO.add_argument('--outNoHeaders', '-nh', action='store_true', help="Don't output header row at the top")
+    groupIO.add_argument('--dataSheet', '-d', type=readable, nargs='*', metavar="FILE", default=[None], help='Delimited text file with unique IDs in first column (or use -i) and headers in first row. Or "stdin *"')
+    groupIO.add_argument('--dataDelim', '-D', metavar='CHAR', nargs='*', default=[','], help='Delimiter of dataSheet. Default is comma *')
+    groupIO.add_argument('--dataIdCol', '-i', type=int, nargs='*', default=[0], metavar='INT', help='Column number (starting from 0) of unique IDs. Or "-1" to auto-generate. Default is 0 (1st column) *')
+    groupIO.add_argument('--dataNoHeader', '-n', type=yesNo, nargs='*', default=[False], metavar='Y|N', help='dataSheet does not contain header row *')
+    groupIO.add_argument('--dataSkipCol', '-s', type=int, nargs='*', default=[0], metavar='INT', help='Skip this number of rows from top of file *')
+    groupIO.add_argument('--dataTrans', '-t', type=yesNo, nargs='*', default=[False], metavar='Y|N', help='Read dataSheet transposed *')
+    groupIO.add_argument('--outSheet', '-o', type=writeable, metavar="FILE", help='Output filename (may include path). Or "stdout" *')
+    groupIO.add_argument('--outDelim', '-O', metavar='CHAR', help='Delimiter of output Sheet. Default is comma', default=',')
+    groupIO.add_argument('--outNoHeaders', '-N', action='store_true', help="Don't output header row at the top")
+    groupIO.add_argument('--outTrans', '-T', action='store_true', help='Write outSheet transposed')
+    groupIO.add_argument('--lockFile', '-L', nargs='?', type=writeable, help="Read/write lock to prevent parallel jobs from overwriting the dataSheet. Use in asynchronous loops. \
+            You may specify a filename (default is <outSheet>.lock)", const=True)
 
     groupRW = parser.add_argument_group('Read/Write')
     groupRW_me = groupRW.add_mutually_exclusive_group()
-    groupRW_me.add_argument('--write', '-w', nargs='*', metavar="ID HEADER VALUE", help="Write new cells")
-    groupRW_me.add_argument('--read', '-r', nargs='*', metavar="ID HEADER", help="Print value of cells")
-    groupRW_me.add_argument('--remove', '-R', nargs='*', metavar="ID HEADER", help="Remove cells")
-    groupRW.add_argument('--lockFile', '-L', nargs='?', type=writeable, help="Prevent parallel jobs from overwriting the dataSheet. Use in asynchronous loops. \
-            You may specify a filename (default is <dataSheet>.lock)", const=True)
-
-    groupM = parser.add_argument_group('Merge')
-    groupM.add_argument('--mergeSheet', '-m', action='append', type=readable, metavar="CSV", help='Merge columns of other spreadsheet to dataSheet *')
-    groupM.add_argument('--mergeDelim', '-M', action='append', metavar='DELIMITER', help='Delimiter of mergeSheet. Default is comma *')
-    groupM.add_argument('--mergeIdCol', '-I', action='append', type=int, metavar='N', help='Column number (starting from 0) of unique IDs for mergeSheet. Default is 0 *')
-    groupM.add_argument('--mergeNoHeader', '-N', action='store_true', help='mergeSheet does not contain header row')
-    groupM.add_argument('--mergeSkipCol', '-S', action='append', type=int, metavar='N', help='Skip this number of rows from top of file *')
-    groupM.add_argument('--mergeTrans', '-T', action='store_true', help='Read mergeSheet transposed')
+    groupRW_me.add_argument('--write', '-w', nargs='*', metavar="ID HEADER VALUE", help="Write new cells *")
+    groupRW_me.add_argument('--read', '-r', nargs='*', metavar="ID HEADER", help="Print value of cells *")
+    groupRW_me.add_argument('--remove', '-R', nargs='*', metavar="ID HEADER", help="Remove cells *")
 
     groupC = parser.add_argument_group('Consolidate')
     groupC.add_argument('--consolidate', '-c', nargs='*', action='append', metavar="HEADER KEYWORD1 KEYWORD2 etc", help='Consolidate columns according to keywords *')
@@ -110,7 +108,12 @@ Examples:
     parser.add_argument('--version', '-V', action='version', version="%(prog)s v" + __version__)
     parser.add_argument('--verbose', '-v', action='count', help='verbosity level')
 
-    args = parser.parse_args()
+    # if no arguments given
+    if len(sys.argv) < 2:
+        parser.print_usage()
+        sys.exit(1)
+    else:
+        args = parser.parse_args()
 
     # setup the logger. we'll use the process ID for the name
     myPid = str(os.getpid())
@@ -120,17 +123,47 @@ Examples:
     elif args.verbose > 1:
         logger.setLevel(logging.DEBUG)
     ch = logging.StreamHandler()
-    formatter = logging.Formatter('%(name)s %(levelname)s %(message)s')
+    formatter = logging.Formatter('%(asctime)s [%(name)s] %(levelname)s: %(message)s', "%Y-%m-%d %H:%M:%S")
     ch.setFormatter(formatter)
     logger.addHandler(ch)
-
-    # no arguments given
-    if not len(sys.argv) > 1:
-        parser.print_usage()
 
     # are there leftover parameters?
     if args.catchall:
         logger.warn("!!! Unused parameters: %s" % flatten(args.catchall))
+
+    # check lists of items for consistency
+    numOfSheets = len(args.dataSheet)
+    if numOfSheets > 0:
+        if len(args.dataDelim) != numOfSheets:
+            if len(args.dataDelim) == 1:
+                args.dataDelim = args.dataDelim * numOfSheets # make this the delimiter for all dataSheets
+            else:
+                logger.critical("!!! You must provide either one dataDelim or as many as your dataSheets (%d). Currently: %d" % (numOfSheets, len(args.dataDelim)))
+                sys.exit(1)
+        if len(args.dataIdCol) != numOfSheets:
+            if len(args.dataIdCol) == 1:
+                args.dataIdCol = args.dataIdCol * numOfSheets # make this the idColumn for all dataSheets
+            else:
+                logger.critical("!!! You must provide either one dataIdCol or as many as your dataSheets (%d). Currently: %d" % (numOfSheets, len(args.dataIdCol)))
+                sys.exit(1)
+        if len(args.dataSkipCol) != numOfSheets:
+            if len(args.dataSkipCol) == 1:
+                args.dataSkipCol = args.dataSkipCol * numOfSheets # make this the number of columns to skip for all dataSheets
+            else:
+                logger.critical("!!! You must provide either one dataSkipCol or as many as your dataSheets (%d). Currently: %d" % (numOfSheets, len(args.dataSkipCol)))
+                sys.exit(1)
+        if len(args.dataNoHeader) != numOfSheets:
+            if len(args.dataNoHeader) == 1:
+                args.dataNoHeader = args.dataNoHeader * numOfSheets
+            else:
+                logger.critical("!!! You must enter a value for dataNoHeader either once or for each of your dataSheets (%d times). Currently: %d" % (numOfSheets, len(args.dataNoHeader)))
+                sys.exit(1)
+        if len(args.dataTrans) != numOfSheets:
+            if len(args.dataTrans) == 1:
+                args.dataTrans = args.dataTrans * numOfSheets
+            else:
+                logger.critical("!!! You must enter a value for dataTrans either once or for each of your dataSheets (%d times). Currently: %d" % (numOfSheets, len(args.dataTrans)))
+                sys.exit(1)
 
     # save once at the end if needed
     save = False
@@ -138,232 +171,209 @@ Examples:
 
     # some IO info
     if args.dataSheet:
-        logger.info("+++ Input sheet: %s" % args.dataSheet)
+        logger.info("+++ Input file(s): %s" % flatten(args.dataSheet, '\n'))
     if args.outSheet:
-        logger.info("+++ Output sheet: %s" % args.outSheet)
-    if args.mergeSheet:
-        for m in args.mergeSheet:
-            logger.info("+++ Merging with: %s" % m)
+        logger.info("+++ Output file: %s" % args.outSheet)
 
     # LOCKING
     lock = False
     if args.lockFile:
 
-        # set lockFile and check that we are not overwriting critical stuff..
-        if args.lockFile == True:
-            args.lockFile = os.path.realpath(args.dataSheet + ".lock")
-        if os.path.isfile(args.lockFile):
-            if args.outSheet and os.path.samefile(args.lockFile, args.outSheet):
-                logger.critical("!!! lockFile can't be the same as your outSheet!")
-                return 1
-            if args.dataSheet and os.path.samefile(args.lockFile, args.dataSheet):
-                logger.critical("!!! lockFile can't be the same as your dataSheet!")
-                return 1
-        args.lockFile = writeable(args.lockFile) # check it is writeable
-
         # check that we have something to lock
-        if args.dataSheet:
+        if args.outSheet:
+
+            # set lockFile and check that we are not overwriting critical stuff..
+            if args.lockFile == True:
+                args.lockFile = os.path.realpath(args.outSheet + ".lock")
+            if os.path.isfile(args.lockFile):
+                try:
+                    if args.outSheet and os.path.samefile(args.lockFile, args.outSheet):
+                        logger.critical("!!! lockFile can't be the same as your outSheet!")
+                        sys.exit(1)
+                    if args.dataSheet and os.path.samefile(args.lockFile, args.dataSheet[0]):
+                        logger.critical("!!! lockFile can't be the same as your dataSheet!")
+                        sys.exit(1)
+                except OSError: # file was deleted in the meantime
+                    pass
+
+            args.lockFile = writeable(args.lockFile) # check it is writeable
+
             lock = True
             logger.info("+++ Lock file: %s" % args.lockFile)
         else:
-            logger.warn("!!! You didn't specify a dataSheet to lock...")
+            logger.warn("!!! Locking makes no sense unless you specify an outSheet...")
 
-        # now perform locking
-        if lock:
-            counter = 1.0
-            timeoutSec = 180.0
-            staleSec = timeoutSec + 2
-            # see if there are leftover locks
-            if os.path.isfile(args.lockFile):
+    # perform locking ?
+    if lock:
+        counter = 1.0
+        timeoutSec = 180.0
+        staleSec = timeoutSec + 2
+        # see if there are leftover locks
+        if os.path.isfile(args.lockFile):
+            try:
                 lockTime = datetime.fromtimestamp(os.path.getmtime(args.lockFile))
                 curTime = datetime.now()
                 if (curTime - lockTime).seconds > staleSec:
                     logger.warn("!!! Removing stale lock: %s" % args.lockFile)
                     os.remove(args.lockFile)
-            # wait for all other instances to finish writing
-            while counter < timeoutSec:
-                if os.path.isfile(args.lockFile):
-                    counter += random()
-                    sleep(counter)
-                else: # attempt a lock
-                    open(args.lockFile,'w').write(myPid)
-                    sleep(random())
-                    try:
-                        thisPid = open(args.lockFile,'rU').read()
-                        if thisPid == myPid: # we've successfully acquired a lock!
-                            break
-                    except IOError: # somebody removed the lock externally...
-                        continue
-            if counter > 1:
-                logger.debug(">>> Process slept for %d sec waiting for lock..." % counter)
-            # we've exceeded the timeoutSec and a process is still writing. now what?
-            if counter >= timeoutSec:
-                args.outSheet += "." + myPid
-                logger.critical("""
+            except OSError: # lock was already removed!
+                pass
+        # wait for all other instances to finish writing
+        while counter < timeoutSec:
+            if os.path.isfile(args.lockFile):
+                counter += random()
+                sleep(counter)
+            else: # attempt a lock
+                open(args.lockFile,'w').write(myPid)
+                sleep(random())
+                try:
+                    thisPid = open(args.lockFile,'rU').read()
+                    if thisPid == myPid: # we've successfully acquired a lock!
+                        break
+                except IOError: # somebody removed the lock externally...
+                    continue
+        if counter > 1:
+            logger.debug(">>> Process slept for %d sec waiting for lock..." % counter)
+        # we've exceeded the timeoutSec and a process is still writing. now what?
+        if counter >= timeoutSec:
+            args.outSheet += "." + myPid
+            logger.critical("""
 !!! LOCK TIMEOUT LIMIT EXCEEDED (%(lt)d seconds)
 !!! Changes (if any) to: %(ds)s
 !!! will be saved to: %(os)s
 !!! To merge changes back, use:
-!!! %(prog)s -d %(ds)s -m %(os)s -o %(ds)s""" % {"lt":timeoutSec, "ds":args.dataSheet, "os":args.outSheet, "prog":sys.argv[0]})
-                lock = False
-            else:
-                logger.debug(">>> Grabbing lock...")
+!!! %(prog)s %(ds)s %(os)s -o %(ds)s""" % {"lt":timeoutSec, "ds":args.dataSheet[0], "os":args.outSheet, "prog":sys.argv[0]})
+            lock = False
+        else:
+            logger.debug(">>> Grabbing lock...")
 
     # check if output exists
-    if args.outSheet and args.outSheet != 'stdout' and os.path.isfile(args.outSheet) and (args.dataSheet == 'stdin' or not os.path.samefile(args.outSheet, args.dataSheet)):
+    if args.outSheet and args.outSheet != 'stdout' and os.path.isfile(args.outSheet) and (args.dataSheet[0] == 'stdin' or not os.path.samefile(args.outSheet, args.dataSheet[0])):
         logger.warn("!!! outSheet already exists and will be overwritten: %s" % args.outSheet)
     if args.outSheet and not args.dataSheet:
         logger.warn(">>> Creating a blank sheet in: %s" % args.outSheet)
 
-    # now read the file
-    mycsv = Pysheet(args.dataSheet, delimiter=args.dataDelim, idColumn=args.dataIdCol, skip=args.dataSkipCol, hasHeader=(not args.dataNoHeader), trans=args.dataTrans)
+    try:
+        # now read the file
+        mycsv = Pysheet(args.dataSheet[0], delimiter=args.dataDelim[0], idColumn=args.dataIdCol[0], skip=args.dataSkipCol[0], hasHeader=(not args.dataNoHeader[0]), trans=args.dataTrans[0])
 
-    # merge
-    if args.mergeSheet:
-        # strangely, defaults don't work as expected when action='append' so we have to do it manually here...
-        if not args.mergeDelim:
-            args.mergeDelim = [',']
-        if not args.mergeIdCol:
-            args.mergeIdCol = [0]
-        if not args.mergeSkipCol:
-            args.mergeSkipCol = [0]
-        #if not args.mergeNoHeader:
-        #    args.mergeNoHeader = [False]
-        # now check merge parameters..
-        if len(args.mergeDelim) != len(args.mergeSheet):
-            if len(args.mergeDelim) == 1:
-                args.mergeDelim = args.mergeDelim * len(args.mergeSheet) # make this the delimiter for all mergeSheets
-            else:
-                logger.critical("!!! You must provide either one mergeDelim or as many as your mergeSheets (%d). Currently: %d" % (len(args.mergeSheet), len(args.mergeDelim)))
-                return 1
-        if len(args.mergeIdCol) != len(args.mergeSheet):
-            if len(args.mergeIdCol) == 1:
-                args.mergeIdCol = args.mergeIdCol * len(args.mergeSheet) # make this the idColumn for all mergeSheets
-            else:
-                logger.critical("!!! You must provide either one mergeIdCol or as many as your mergeSheets (%d). Currently: %d" % (len(args.mergeSheet), len(args.mergeIdCol)))
-                return 1
-        if len(args.mergeSkipCol) != len(args.mergeSheet):
-            if len(args.mergeSkipCol) == 1:
-                args.mergeSkipCol = args.mergeSkipCol * len(args.mergeSheet) # make this the number of columns to skip for all mergeSheets
-            else:
-                logger.critical("!!! You must provide either one mergeSkipCol or as many as your mergeSheets (%d). Currently: %d" % (len(args.mergeSheet), len(args.mergeSkipCol)))
-                return 1
-        #if len(args.mergeNoHeader) != len(args.mergeSheet):
-        #    if len(args.mergeNoHeader) == 1:
-        #        args.mergeNoHeader = args.mergeNoHeader * len(args.mergeSheet)
-        #    else:
-        #        logger.critical("!!! You must enter mergeNoHeader either one time (same for all mergeSheets) or once for each of your mergeSheets (%d times). Currently: %d" % (len(args.mergeSheet), len(args.mergeNoHeader)))
-        #        return 1
-        # now merge
-        for m in range(len(args.mergeSheet)):
-            myothercsv = Pysheet(args.mergeSheet[m], delimiter=args.mergeDelim[m], idColumn=args.mergeIdCol[m], skip=args.mergeSkipCol[m], hasHeader=(not args.mergeNoHeader), trans=args.mergeTrans)
-            mycsv += myothercsv # __add__
-            mycsv.contract(mode=args.mode) # merge same columns
+        # merge
+        if numOfSheets > 1:
+            for m in range(1, numOfSheets):
+                myothercsv = Pysheet(args.dataSheet[m], delimiter=args.dataDelim[m], idColumn=args.dataIdCol[m], skip=args.dataSkipCol[m], hasHeader=(not args.dataNoHeader[m]), trans=args.dataTrans[m])
+                mycsv += myothercsv # __add__
+                mycsv.contract(mode=args.mode) # merge same columns
+
+        # remove cells
+        if args.remove:
+            try:
+                cells = reshape(args.remove,(len(args.remove)/2,2))
+                printed = 0
+                for i in range(len(cells)):
+                    if cells[i][1].lower() == "none":
+                        ret = mycsv.removeCell(key=cells[i][0])
+                        #if ret: save = True
+                        if isList(ret):
+                            ret = '|'.join(ret)
+                    else:
+                        ret = mycsv.removeCell(key=cells[i][0],header=cells[i][1])
+                        #if ret: save = True
+                    if ret:
+                        sys.stdout.write(str(ret))
+                        printed += 1
+                logger.info("=== Deleted %d cell%s.." % (printed, '' if printed==1 else 's'))
+            except ValueError:
+                logger.critical("!!! Cell entries must be of the form 'ID header': %s" % flatten(args.remove))
+                sys.exit(1)
 
 
-    # remove cells
-    if args.remove:
-        try:
-            cells = reshape(args.remove,(len(args.remove)/2,2))
-            printed = 0
-            for i in range(len(cells)):
-                if cells[i][1].lower() == "none":
-                    ret = mycsv.removeCell(key=cells[i][0])
-                    #if ret: save = True
-                    if isList(ret):
-                        ret = '|'.join(ret)
-                else:
-                    ret = mycsv.removeCell(key=cells[i][0],header=cells[i][1])
-                    #if ret: save = True
-                if ret:
-                    sys.stdout.write(str(ret))
-                    printed += 1
-            logger.info("=== Deleted %d cell%s.." % (printed, '' if printed==1 else 's'))
-        except ValueError:
-            logger.critical("!!! Cell entries must be of the form 'ID header': %s" % flatten(args.remove))
-            return 1
+        # add cells
+        if args.write:
+            try:
+                cells = reshape(args.write,(len(args.write)/3,3))
+                #save = True
+                for i in range(len(cells)):
+                    if cells[i][1].lower() == "none":
+                        mycsv.addCell(cells[i][0], mode=args.mode)
+                    else:
+                        mycsv.addCell(cells[i][0],cells[i][1],cells[i][2], mode=args.mode)
+                logger.info("=== Added %d cell%s.." % (len(cells), '' if len(cells)==1 else 's'))
+            except ValueError:
+                logger.critical("!!! Cell entries must be of the form 'ID header value': %s" % flatten(args.write))
+                sys.exit(1)
 
 
-    # add cells
-    if args.write:
-        try:
-            cells = reshape(args.write,(len(args.write)/3,3))
-            #save = True
-            for i in range(len(cells)):
-                if cells[i][1].lower() == "none":
-                    mycsv.addCell(cells[i][0], mode=args.mode)
-                else:
-                    mycsv.addCell(cells[i][0],cells[i][1],cells[i][2], mode=args.mode)
-            logger.info("=== Added %d cell%s.." % (len(cells), '' if len(cells)==1 else 's'))
-        except ValueError:
-            logger.critical("!!! Cell entries must be of the form 'ID header value': %s" % flatten(args.write))
-            return 1
+        # consolidate
+        if args.clean:
+            for c in args.clean:
+                logger.info(">>> Consolidating (clean): %s" % flatten(c) if c else "same headers")
+            mycsv.consolidate(args.clean, cleanUp=True, mode=args.mode)
+        if args.consolidate:
+            for c in args.consolidate:
+                logger.info(">>> Consolidating: %s" % flatten(c) if c else "same headers")
+            mycsv.consolidate(args.consolidate, mode=args.mode)
 
 
-    # consolidate
-    if args.clean:
-        for c in args.clean:
-            logger.info(">>> Consolidating (clean): %s" % flatten(c) if c else "same headers")
-        mycsv.consolidate(args.clean, cleanUp=True, mode=args.mode)
-    if args.consolidate:
-        for c in args.consolidate:
-            logger.info(">>> Consolidating: %s" % flatten(c) if c else "same headers")
-        mycsv.consolidate(args.consolidate, mode=args.mode)
+        # query
+        # by columns
+        if args.columns != None: # we still need to handle []
+            if not args.columns == []: # if we got some column specification, extract those columns (else print all columns)
+                cols = Pysheet()
+                cols.load(mycsv.getColumns(args.columns, blanks=True, exclude=False))
+                mycsv = cols # make this the current spreadsheet
+            if not args.outSheet and not args.query and not args.read and not args.printHeaders:
+                sys.stdout.write(str(mycsv))
+        # print headers
+        if args.printHeaders:
+            for hi in range(len(mycsv.getHeaders())):
+                sys.stdout.write("%d %s\n" % (hi, mycsv.getHeaders()[hi]))
+        # by rows
+        if args.query:
+            retList = transpose(mycsv.getColumns(args.query))[0][1:] # first column is always the IDs; 1: skips the header row (now column)
+            retList.sort()
+            logger.info("=== Query '%s' returned %d ID%s.." % (flatten(args.query), len(retList), '' if len(retList)==1 else 's'))
+            for item in retList:
+                sys.stdout.write(item+"\n")
+        # by cells
+        if args.read:
+            try:
+                cells = reshape(args.read,(len(args.read)/2,2))
+                printed = 0
+                for i in range(len(cells)):
+                    if cells[i][1].lower() == "none":
+                        ret = mycsv.grab(key=cells[i][0])
+                        if isList(ret):
+                            ret = '|'.join(ret)
+                    else:
+                        ret = mycsv.grab(key=cells[i][0],header=cells[i][1])
+                    if ret:
+                        sys.stdout.write(str(ret))
+                        printed += 1
+                logger.info("=== Printed %d cell%s.." % (printed, '' if printed==1 else 's'))
+            except ValueError:
+                logger.critical("!!! Cell entries must be of the form 'ID header': %s" % flatten(args.read))
+                sys.exit(1)
 
+        # now save
+        if save:
+            if args.wait:
+                logger.debug(">>> Sleeping %d sec" % args.wait)
+                sleep(args.wait)
+            mycsv.save(args.outSheet, args.outDelim, not args.outNoHeaders, args.outTrans)
+            logger.info("=== Sheet saved in: %s" % args.outSheet)
 
-    # query
-    # by columns
-    if args.columns != None: # we still need to handle []
-        if not args.columns == []: # if we got some column specification, extract those columns (else print all columns)
-            cols = Pysheet()
-            cols.load(mycsv.getColumns(args.columns, blanks=True, exclude=False))
-            mycsv = cols # make this the current spreadsheet
-        if not args.outSheet and not args.query and not args.read and not args.printHeaders:
-            sys.stdout.write(str(mycsv))
-    # print headers
-    if args.printHeaders:
-        for hi in range(len(mycsv.getHeaders())):
-            sys.stdout.write("%d %s\n" % (hi, mycsv.getHeaders()[hi]))
-    # by rows
-    if args.query:
-        retList = transpose(mycsv.getColumns(args.query))[0][1:] # first column is always the IDs; 1: skips the header row (now column)
-        retList.sort()
-        logger.info("=== Query '%s' returned %d ID%s.." % (flatten(args.query), len(retList), '' if len(retList)==1 else 's'))
-        for item in retList:
-            sys.stdout.write(item+"\n")
-    # by cells
-    if args.read:
-        try:
-            cells = reshape(args.read,(len(args.read)/2,2))
-            printed = 0
-            for i in range(len(cells)):
-                if cells[i][1].lower() == "none":
-                    ret = mycsv.grab(key=cells[i][0])
-                    if isList(ret):
-                        ret = '|'.join(ret)
-                else:
-                    ret = mycsv.grab(key=cells[i][0],header=cells[i][1])
-                if ret:
-                    sys.stdout.write(str(ret))
-                    printed += 1
-            logger.info("=== Printed %d cell%s.." % (printed, '' if printed==1 else 's'))
-        except ValueError:
-            logger.critical("!!! Cell entries must be of the form 'ID header': %s" % flatten(args.read))
-            return 1
-
-    # now save
-    if save:
-        if args.wait:
-            logger.debug(">>> Sleeping %d sec" % args.wait)
-            sleep(args.wait)
-        mycsv.save(args.outSheet, args.outDelim, not args.outNoHeaders)
-        logger.info("=== Sheet saved in: %s" % args.outSheet)
+    # catch all exception thrown by Pysheet objects
+    except PysheetException as e:
+        print "!!! Pysheet Error: %s" % e.message
+        sys.exit(3)
+    except KeyboardInterrupt:
+        print "!!! Interrupted"
+        sys.exit(1)
 
     if lock:
         logger.debug(">>> Releasing lock...")
         os.remove(args.lockFile)
 
-    return 0
 
 
 ####################################
@@ -373,9 +383,9 @@ Examples:
 class Pysheet:
     """Pysheet - A library to read, write and manipulate spreadsheets"""
     # globals
-    HEADERS_ID      = "__headers__" # denotes the row which contains the header labels
+    HEADERS_ID      = "__header__" # denotes the row which contains the header labels
     EXCLUDE_HEADER  = "__exclude__" # special column header used to flag a row for exclusion
-    AUTO_ID_HEADER  = "__Auto_ID__" # header used for auto ids when negative idColumn specified
+    AUTO_ID_HEADER  = "__AutoID__" # header used for auto ids when negative idColumn specified
     MIN_LINE_LEN    = 2             # minimum length of input line array to treat as valid
     COMMENT_CHAR    = '#'           # lines starting with this character will be excluded
     APPEND_CHAR     = ';'           # character used to merge strings in consolidated columns
@@ -388,29 +398,41 @@ class Pysheet:
     delimiter = None # the sheet delimiter
     rows      = None # the dictionary that maps an ID to its row
     idColumn  = 0    # the column index that contains the IDs
+    obj_id   = None  # an id to distinguish between objects
 
     def __init__(self, filename=None, delimiter=',', iterable=None, idColumn=None, skip=0, hasHeader=True, trans=False):
         """initializes the object and reads in a sheet from a file or an iterable.
         Optionally specify the column number that contains the unique IDs (starting from 0)"""
+        # set IDs
+        if not self.obj_id:
+            self.obj_id = randomId() #str(id(self))
+            self.HEADERS_ID = self.HEADERS_ID + self.obj_id
+            self.AUTO_ID_HEADER = self.AUTO_ID_HEADER + self.obj_id
+            self.FLAG_VALUE = self.FLAG_VALUE + self.obj_id
+        else:
+            sys.stderr.write("!!! Re-initialising %s" % self.obj_id)
+        # set filename
         self.filename = filename
+        # set ID column
         if idColumn != None:
             try:
                 self.idColumn = int(idColumn)
             except ValueError as e:
                 self.idColumn = 0
+        # set delimiter
         if delimiter == r'\t':
             self.delimiter = "\t"
         elif delimiter == r'\s':
             self.delimiter = "\s"
         else:
             self.delimiter = delimiter
-        self.rows = {}
+        # initialize dictionary
+        #self.rows = {}
+        # and call the appropriate loader
         if filename and (os.path.exists(filename) or filename == 'stdin'):
             self.loadFile(self.filename, self.idColumn, skip, hasHeader, trans)
-        elif iterable != None:
-            self.load(iterable, self.idColumn, skip, hasHeader, trans)
         else:
-            self[self.HEADERS_ID] = ["ID"]
+            self.load(iterable, self.idColumn, skip, hasHeader, trans)
 
     def loadFile(self, filename, idColumn=None, skip=0, hasHeader=True, trans=False):
         """loads the sheet into a dictionary where the IDs in the first column are mapped to their rows.
@@ -433,6 +455,11 @@ class Pysheet:
     def load(self, iterable, idColumn=None, skip=0, hasHeader=True, trans=False):
         """creates a Pysheet object from an iterable.
         Optionally specify the column number that contains the unique IDs (starting from 0)"""
+        # if empty set headers and return
+        if iterable == None:
+            self.rows = {self.HEADERS_ID:"ID"}
+            return
+        # try iterating it
         try:
             iterator = iter(iterable)
         except TypeError:
@@ -464,14 +491,16 @@ class Pysheet:
                 pass
             iterator = iter(zip(*cols))
 
-        if self.rows != None: # clear the object
-            self.__init__(filename=None,delimiter=self.delimiter)
+        #if self.rows != None: # clear the object
+        self.clear() #__init__(filename=None,delimiter=self.delimiter)
 
         row = 1
         head_len = -1
         if idColumn != None:
             try:
                 self.idColumn = int(idColumn)
+                if self.idColumn < 0: # auto-generate ids!
+                    self.idColumn = -1
             except ValueError:
                 self.idColumn = 0
         try:
@@ -482,43 +511,51 @@ class Pysheet:
                     continue
                 if row == 1:
                     head_len = line_len
-                    if self.idColumn > head_len-1:
+                    if self.idColumn >= head_len:
                         raise PysheetException("Invalid id column. Maximum is %d (starting from 0)" % (head_len-1))
-                    if self.idColumn < 0: # auto-generate ids!
-                        self.idColumn = -1
 
                     # load headers
                     if not hasHeader:
-                        self.rows[self.HEADERS_ID] = ["C%03d" % (col+1) for col in range(head_len)]
+                        self.rows[self.HEADERS_ID] = ["C%03d_%s" % (col+1, self.obj_id) for col in range(head_len)]
                         row+=1 # so that this line gets added below
                     else:
                         self.rows[self.HEADERS_ID] = [str(value).strip() for value in line] # sanitize(value) for value in line]
 
                     if self.idColumn == -1:
                         self.rows[self.HEADERS_ID].append(self.AUTO_ID_HEADER)
-                    #print "HEAD_LEN", head_len, self.idColumn, line
                 if row > 1:
                     thisline = []
-                    for value in line:
+                    for value in line[:head_len]:
                         thisline.append(value)
-                    while line_len < head_len:
-                        thisline.append(self.BLANK_VALUE)
-                        line_len += 1
+                    if line_len > head_len: # we have a problem
+                        sys.stderr.write("!!! Line %d (%d) is longer than your header line (%d) and will be truncated!! Please make sure every column has a header\n" % (row, line_len, head_len))
+                        line_len = head_len
+                    elif line_len < head_len:
+                        while line_len < head_len:
+                            thisline.append(self.BLANK_VALUE)
+                            line_len += 1
                     if self.idColumn == -1: # auto-generate ids!
-                        thisline.append("R%05d" % (row-1))
+                        thisline.append("R%05d_%s" % (row-1, self.obj_id))
                         line_len += 1
                     self.rows[clean(sanitize(thisline[self.idColumn]))] = thisline
                 row += 1
         except StopIteration:
-            #pass
-            sys.stderr.write("%d rows loaded\n" % self.height())
+            sys.stderr.write("+++ %d rows loaded\n" % self.height())
             discarded = row-1 - self.height()
             if discarded > 0:
-                sys.stderr.write("%d rows discarded due to duplicate IDs! Consider using -i -1\n" % discarded)
-            sys.stderr.write("%d columns loaded\n\n" % head_len)
+                sys.stderr.write("!!! %d rows discarded due to duplicate IDs! Consider using -i -1\n" % discarded)
+            sys.stderr.write("+++ %d columns loaded\n" % head_len)
+            # now set proper idColumn if auto
+            if self.idColumn == -1:
+                self.idColumn = head_len
         except Exception as e:
             printStackTrace()
             raise PysheetException(e.message)
+
+    def clear(self):
+        """clears the object"""
+        self.rows={}
+        #self.filename=None
 
     def __iter__(self):
         """returns an iterator over the ID:row items in the csv"""
@@ -681,6 +718,7 @@ class Pysheet:
         """merges two Pysheets together"""
         if not isinstance(other, self.__class__):
             try:
+                sys.stderr.write("Casting a pysheet!")
                 other = Pysheet(iterable=other) # if we have an iterable, make a default Pysheet on the fly
             except Exception:
                 printStackTrace()
@@ -688,10 +726,14 @@ class Pysheet:
         oldlen = len(self)
         # merge the existing IDs
         for i in self.rows.keys():
-            item = other.pop(i,None) # pops item i or None if not found
+            # check for headers row
+            if i == self.HEADERS_ID:
+                item = other.pop(other.HEADERS_ID)
+            else: # pops item i or None if not found
+                item = other.pop(i,None)
             if item != None and isList(item) and len(item)>1:
                 self[i] += item
-        # loop through the rest of the IDs, null padding to the left
+        # loop through the rest of the IDs, blank-padding to the left
         for i in other.rows.keys():
             self[i] = [self.BLANK_VALUE] * oldlen + other[i]
         # make it sqare again
@@ -886,7 +928,7 @@ class Pysheet:
         headlen = len(self)
         for i in self.rows.keys():
             thislen = len(self[i])
-            assert thislen <= headlen, "Error in dictionary row %s. Greater than length of headers row (%d): %s" % (i, headlen, self[i])
+            assert thislen <= headlen, "Error in row %s. Greater than length of headers row (%d): %d" % (i, headlen, len(self[i]))
             if thislen < headlen:
                 self[i] += [self.BLANK_VALUE] * (headlen - thislen)
 
@@ -908,7 +950,6 @@ class Pysheet:
                                 self.rename(self[k][i], key=k) # re-index just in case
                             else:
                                 self[k][i] = self.mergedValue(self[k][i], self[k][j], mode=mode)
-
         # now delete duplicate columns
         if deleteme:
             self.removeColumns(deleteme)
@@ -928,6 +969,10 @@ class Pysheet:
             else:
                 cols.sort()
                 cols.reverse()
+                cols_unique = unique(cols)
+                if len(cols) != len(cols_unique):
+                    sys.stderr.write("!!! Non-unique headers detected! Please make sure that all your headers are unique and that there are no blank headers\n")
+                    cols = cols_unique
             # check columns to be removed
             for c in cols:
                 assert type(c) is IntType, "column is not an integer: %r" % c
@@ -1052,7 +1097,7 @@ class Pysheet:
         levs = unique(tryNumber(qcolumn[offset:]), blanks=False)
         return (levs, isNumber(levs), len(levs))
 
-    def save(self, output=None, delimiter=',', saveHeaders=True):
+    def save(self, output=None, delimiter=',', saveHeaders=True, trans=False):
         """saves the current state of the dictionary as a delimited text file"""
         # check output
         if not output:
@@ -1104,7 +1149,10 @@ class Pysheet:
                 else:
                     line.append(cPickle.dumps(row[col]))
             ret.append(line)
-        writer.writerows(ret)
+        if trans:
+            writer.writerows(transpose(ret))
+        else:
+            writer.writerows(ret)
         # set the filename
         if not self.filename:
             self.filename = output
@@ -1175,9 +1223,19 @@ def writeable(f):
         raise argparse.ArgumentTypeError("File is not writeable: %s" % f)
     return f
 
-def flatten(l):
-    """converts an array to string with a space in between items"""
-    return reduce(lambda x,y: "%s %s" % (x,y), l)
+def yesNo(f):
+    """type for argparse - receives yes|no and converts to True|False"""
+    if f.lower() in ["y","yes","true","1"]:
+        return True
+    elif f.lower() in ["n","no","false","0"]:
+        return False
+    else:
+        raise argparse.ArgumentTypeError("Value must be one of y|yes|true|1|n|no|false|0, not " % f)
+    return f
+
+def flatten(l, delim=" "):
+    """converts an array to string with a delimiter in between items"""
+    return reduce(lambda x,y: "%s%s%s" % (x,delim,y), l)
 
 def printStackTrace():
     """prints an exception trace. To be used in an Except block"""
@@ -1185,7 +1243,7 @@ def printStackTrace():
 
 def isList(x):
     """returns True if x is some kind of a list"""
-    return isinstance(x, (ListType, ndarray, tuple))
+    return (not hasattr(x, "strip") and hasattr(x, "__getitem__") or hasattr(x, "__iter__"))
 
 def isNumber(x, strOk=False):
     """returns True if x is a number (or list of numbers)"""
@@ -1230,12 +1288,36 @@ def clean(s):
 
 def sanitize(s):
     """removes special characters from a string"""
+    return s # this takes too long so removing it
     if isList(s):
         return [sanitize(i) for i in s]
     p = re.compile('[\$\\\/&><\s\[\]\(\)\*:^]')
     return p.sub('_',str(s).strip())
 
+def randomId(size=6, chars=None):
+    """generates a random string of letters and numbers"""
+    import random, string
+    if not chars:
+        chars = string.ascii_lowercase + string.digits
+    return ''.join(random.choice(chars) for x in range(size))
+
 
 if __name__ == '__main__':
-    exit(main())
-
+    if PROFILE:
+        import cProfile, pstats
+        cProfile.runctx('main()', globals(), locals(), PROFILE_DAT)
+        f = open(PROFILE_TXT, 'wb')
+        for sort_key in 'time', 'cumulative':
+            stats = pstats.Stats(PROFILE_DAT, stream=f)
+            stats.sort_stats(sort_key)
+            stats.print_stats(PROFILE_LIMIT)
+            stats.strip_dirs()
+            stats.sort_stats(sort_key)
+            if sort_key == 'time':
+                stats.print_callers(PROFILE_LIMIT)
+            else:
+                stats.print_callees(PROFILE_LIMIT)
+        f.close()
+        os.unlink(PROFILE_DAT)
+    else:
+        main()
