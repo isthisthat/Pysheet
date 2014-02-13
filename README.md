@@ -421,6 +421,10 @@ Generated using:
 Available at [Pysheet.html](http://htmlpreview.github.io/?https://github.com/isthisthat/Pysheet/blob/master/Pysheet.html)
 
 ## Changelog
+### v3.1
+* Lots of bugfixes
+* Now more robust with empty files
+
 ### v3.0
 * Many speed and stability improvements
 * Moved merge options to just be additional arguments of the data options
