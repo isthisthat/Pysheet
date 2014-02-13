@@ -7,7 +7,7 @@ Copyright (c) 2014, Stathis Kanterakis
 Last Update: Feb 2014
 """
 
-__version__ = "3.0"
+__version__ = "3.1"
 __author__  = "Stathis Kanterakis"
 __license__ = "LGPL"
 
@@ -133,6 +133,9 @@ Examples:
     # check lists of items for consistency
     numOfSheets = len(args.dataSheet)
     if numOfSheets > 0:
+        if args.dataSheet.count("stdin") > 1:
+            logger.critical("!!! You can't have two inputs from stdin")
+            sys.exit(1)
         if len(args.dataDelim) != numOfSheets:
             if len(args.dataDelim) == 1:
                 args.dataDelim = args.dataDelim * numOfSheets # make this the delimiter for all dataSheets
@@ -247,7 +250,7 @@ Examples:
             logger.debug(">>> Grabbing lock...")
 
     # check if output exists
-    if args.outSheet and args.outSheet != 'stdout' and os.path.isfile(args.outSheet) and (args.dataSheet[0] == 'stdin' or not os.path.samefile(args.outSheet, args.dataSheet[0])):
+    if args.outSheet and args.outSheet != 'stdout' and os.path.isfile(args.outSheet) and not args.outSheet in args.dataSheet:
         logger.warn("!!! outSheet already exists and will be overwritten: %s" % args.outSheet)
     if args.outSheet and not args.dataSheet:
         logger.warn(">>> Creating a blank sheet in: %s" % args.outSheet)
@@ -359,7 +362,7 @@ Examples:
                 logger.debug(">>> Sleeping %d sec" % args.wait)
                 sleep(args.wait)
             mycsv.save(args.outSheet, args.outDelim, not args.outNoHeaders, args.outTrans)
-            logger.info("=== Sheet saved in: %s" % args.outSheet)
+            logger.info("=== Saved as: %s" % args.outSheet)
 
     # catch all exception thrown by Pysheet objects
     except PysheetException as e:
@@ -409,7 +412,7 @@ class Pysheet:
             self.AUTO_ID_HEADER = self.AUTO_ID_HEADER + self.obj_id
             self.FLAG_VALUE = self.FLAG_VALUE + self.obj_id
         else:
-            sys.stderr.write("!!! Re-initialising %s" % self.obj_id)
+            sys.stderr.write("!!! Re-initialising %s\n" % self.obj_id)
         # set filename
         self.filename = filename
         # set ID column
@@ -430,8 +433,10 @@ class Pysheet:
         # and call the appropriate loader
         if filename and (os.path.exists(filename) or filename == 'stdin'):
             self.loadFile(self.filename, self.idColumn, skip, hasHeader, trans)
-        else:
+        elif iterable:
             self.load(iterable, self.idColumn, skip, hasHeader, trans)
+        else:
+            self.clear()
 
     def loadFile(self, filename, idColumn=None, skip=0, hasHeader=True, trans=False):
         """loads the sheet into a dictionary where the IDs in the first column are mapped to their rows.
@@ -454,9 +459,11 @@ class Pysheet:
     def load(self, iterable, idColumn=None, skip=0, hasHeader=True, trans=False):
         """creates a Pysheet object from an iterable.
         Optionally specify the column number that contains the unique IDs (starting from 0)"""
+        name = os.path.basename(self.filename) if self.filename else self.obj_id
         # if empty set headers and return
-        if iterable == None:
-            self.rows = {self.HEADERS_ID:"ID"}
+        if not iterable:
+            sys.stderr.write("!!! Null iterbale. Clearing object %s\n" % name)
+            self.clear()
             return
         # try iterating it
         try:
@@ -469,6 +476,7 @@ class Pysheet:
         while skip_counter < skip:
             discard = iterator.next()
             skip_counter += 1
+
         # do transpose
         if trans:
             cols = []
@@ -489,11 +497,12 @@ class Pysheet:
             except StopIteration:
                 pass
             iterator = iter(zip(*cols))
+        
+        # clear the object
+        self.clear()
 
-        #if self.rows != None: # clear the object
-        self.clear() #__init__(filename=None,delimiter=self.delimiter)
-
-        row = 1
+        # set id column
+        row = 0
         head_len = -1
         if idColumn != None:
             try:
@@ -502,49 +511,64 @@ class Pysheet:
                     self.idColumn = -1
             except ValueError:
                 self.idColumn = 0
+        # start reading
         try:
+            line = None
             while True:
                 line = iterator.next()
                 line_len = len(line)
-                if line_len < self.MIN_LINE_LEN or str(line[0]).startswith(self.COMMENT_CHAR): # skip blank, short lines and comments
+                # skip blank, short lines and comments
+                if line_len < max(self.MIN_LINE_LEN, 1) or str(line[0]).startswith(self.COMMENT_CHAR):
                     continue
-                if row == 1:
+                # header row
+                if row == 0:
                     head_len = line_len
                     if self.idColumn >= head_len:
-                        raise PysheetException("Invalid id column. Maximum is %d (starting from 0)" % (head_len-1))
-
+                        raise PysheetException("Invalid id column. Maximum is %d (starting from 0)" % \
+                                (head_len-1))
                     # load headers
                     if not hasHeader:
-                        self.rows[self.HEADERS_ID] = ["C%03d_%s" % (col+1, self.obj_id) for col in range(head_len)]
+                        self.rows[self.HEADERS_ID] = ["C%03d_%s" % (col+1, self.obj_id) \
+                                for col in range(head_len)]
                         row+=1 # so that this line gets added below
                     else:
-                        self.rows[self.HEADERS_ID] = [str(value).strip() for value in line] # sanitize(value) for value in line]
-
+                        self.rows[self.HEADERS_ID] = [str(value).strip() for value in line]
+                    # did they request auto ids?
                     if self.idColumn == -1:
                         self.rows[self.HEADERS_ID].append(self.AUTO_ID_HEADER)
-                if row > 1:
+                # rest or rows
+                if row > 0:
                     thisline = []
                     for value in line[:head_len]:
                         thisline.append(value)
                     if line_len > head_len: # we have a problem
-                        sys.stderr.write("!!! Line %d (%d) is longer than your header line (%d) and will be truncated!! Please make sure every column has a header\n" % (row, line_len, head_len))
+                        sys.stderr.write("!!! Line %d is longer than your header line (%d vs %d) and will be truncated!! Please make sure every column has a header\n" % \
+                                (row+1, line_len, head_len))
                         line_len = head_len
                     elif line_len < head_len:
                         while line_len < head_len:
                             thisline.append(self.BLANK_VALUE)
                             line_len += 1
                     if self.idColumn == -1: # auto-generate ids!
-                        thisline.append("R%05d_%s" % (row-1, self.obj_id))
+                        thisline.append("R%05d_%s" % (row, self.obj_id))
                         line_len += 1
                     self.rows[clean(sanitize(thisline[self.idColumn]))] = thisline
+                # move to next row
                 row += 1
+
         except StopIteration:
-            sys.stderr.write("+++ %d rows loaded\n" % self.height())
-            discarded = row-1 - self.height()
-            if discarded > 0:
-                sys.stderr.write("!!! %d rows discarded due to duplicate IDs! Consider using -i -1\n" % discarded)
-            sys.stderr.write("+++ %d columns loaded\n" % head_len)
-            # now set proper idColumn if auto
+            # print some status messages
+            discarded = row - self.height()
+            if head_len == -1 and line != None:
+                sys.stderr.write("+++ %s: empty (wrong delimiter?)\n" % name)
+            elif head_len == -1:
+                sys.stderr.write("+++ %s: empty\n" % name)
+            elif discarded > 0:
+                sys.stderr.write("+++ %s: %d rows (%d discarded: duplicate ids), %d columns\n" % \
+                    (name, self.height(), discarded, head_len))
+            else:
+                sys.stderr.write("+++ %s: %d rows, %d columns\n" % (name, self.height(), head_len))
+            # set proper idColumn if auto
             if self.idColumn == -1:
                 self.idColumn = head_len
         except Exception as e:
@@ -553,8 +577,7 @@ class Pysheet:
 
     def clear(self):
         """clears the object"""
-        self.rows={}
-        #self.filename=None
+        self.rows={self.HEADERS_ID:["ID"]}
 
     def __iter__(self):
         """returns an iterator over the ID:row items in the csv"""
@@ -715,30 +738,38 @@ class Pysheet:
 
     def __add__(self, other, mergeHeaders=False):
         """merges two Pysheets together"""
-        if not isinstance(other, self.__class__):
+        # see if it is a pysheet
+        try:
+            other.HEADERS_ID
+        except:
             try:
-                sys.stderr.write("Casting a pysheet!")
                 other = Pysheet(iterable=other) # if we have an iterable, make a default Pysheet on the fly
+                sys.stderr.write("+++ Cast pysheet %s\n" % other.obj_id)
             except Exception:
                 printStackTrace()
                 raise PysheetException("I don't know how to add this. Please use a Pysheet")
+        # remember old length
         oldlen = len(self)
         # merge the existing IDs
+        merged = False
         for i in self.rows.keys():
             # check for headers row
             if i == self.HEADERS_ID:
                 item = other.pop(other.HEADERS_ID)
             else: # pops item i or None if not found
                 item = other.pop(i,None)
-            if item != None and isList(item) and len(item)>1:
+            if item != None and isList(item) and len(item) > 0:
                 self[i] += item
+                merged = True # merged at least one thing
         # loop through the rest of the IDs, blank-padding to the left
         for i in other.rows.keys():
             self[i] = [self.BLANK_VALUE] * oldlen + other[i]
+            merged = True
         # make it sqare again
         self.expand()
         # make ID column header names the same so they will be merged in the next step!
-        self.getHeaders()[oldlen + other.idColumn] = self.getHeaders()[self.idColumn]
+        if merged:
+            self.getHeaders()[oldlen + other.idColumn] = self.getHeaders()[self.idColumn]
         # merge common headers?
         if mergeHeaders:
             self.contract()
