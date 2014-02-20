@@ -3,15 +3,14 @@
 Pysheet is your best companion to Excel for data management. It can read and write to a spreadsheet, consolidate columns and merge spreadsheets together. It allows you to query for information thus turning your Excel sheet into a little database. It can be used both as a python library and as a command-line tool and supports concurrent access control.
 
 ## Quick Start
-1. Install [_texttable_](https://pypi.python.org/pypi/texttable):
+1. Install using pip:
 
-        pip install texttable
+        pip install pysheet
 
-2. Download _pysheet.py_ from this repository
-3. Run the following commands in the folder where you downloaded _pysheet.py_:
+3. Try the following commands:
 
-        ./pysheet.py -o helloworld.csv --write 1 A Pysheet 2 B your 3 C best 4 D companion 5 E to 6 F Excel -v
-        ./pysheet.py -d helloworld.csv --columns 4 2 1 3 5 6
+        pysheet -o helloworld.csv --write 1 A Pysheet 2 B your 3 C best 4 D companion 5 E to 6 F Excel -v
+        pysheet -d helloworld.csv --columns 4 2 1 3 5 6
 
 Output:
 
@@ -30,7 +29,7 @@ _helloworld.csv_ in Excel:
 
 ## _Real-life_ Demo
 For a real-life demo and a more in-depth look at Pysheet, let's look at an example from the field of genetics.
-Download the following files and place them in the same directory as pysheet.py:
+Download the following files:
 
 * A catalogue of genes implicated in cancer [cancer_gene_census.tsv](http://cancer.sanger.ac.uk/cancergenome/data/cancer_gene_census.tsv)
 * Zebrafish genes that have a correspondence (ortholog) in human [ortho_2013.05.15.txt](http://zfin.org/downloads/file/ortho.txt?tsv=2013.05.15)
@@ -41,9 +40,9 @@ Let's first get a printout of our two files. We know that the files are tab-deli
 
     -D'\t'
 
-From the directory that contains pysheet.py and the two above files type:
+From the directory that contains the two above files type:
 
-    ./pysheet.py -d ortho_2013.05.15.txt -D'\t' -k | head
+    pysheet -d ortho_2013.05.15.txt -D'\t' -k | head
 
 Output:
 
@@ -67,7 +66,7 @@ We start counting from 0 so we'll use the `--columns`/`-k` argument:
 
 Let's check the file:
 
-    ./pysheet.py -d cancer_gene_census.tsv -D'\t' -k 2-3 | head
+    pysheet -d cancer_gene_census.tsv -D'\t' -k 2-3 | head
 
 Output:
 
@@ -88,7 +87,7 @@ We wish to join these two files by Gene Symbol. In the first file, this is the 4
 
 Let's merge these files in memory and print the resulting headers. We'll merge just by providing additional inputs ans then use the `--printHeaders`/`-H` argument in the command:
 
-    ./pysheet.py -d pheno_2013.05.15.txt cancer_gene_census.tsv -i 3 0 -D '\t' '\t' -H
+    pysheet -d pheno_2013.05.15.txt cancer_gene_census.tsv -i 3 0 -D '\t' '\t' -H
 
 The output should be:
 
@@ -120,7 +119,7 @@ Let's manipulate the merged file a bit more before we save it. We would like to 
 
 Let's see the resulting headers:
 
-    ./pysheet.py -d pheno_2013.05.15.txt cancer_gene_census.tsv -i 3 0 -D '\t' '\t' -C Phenotype Cancer Mut Other -H
+    pysheet -d pheno_2013.05.15.txt cancer_gene_census.tsv -i 3 0 -D '\t' '\t' -C Phenotype Cancer Mut Other -H
 
 Output:
 
@@ -157,7 +156,7 @@ Have been removed and replaced by:
 The double underscore `__` in front of the header name indicates a "locked" header, i.e. do not use this header in further consolidations. But the header can still be called without the double underscore and is also printed without it as you will see below.
 Let's visualise a few lines from this column:
 
-    ./pysheet.py -d pheno_2013.05.15.txt cancer_gene_census.tsv -i 3 0 -D '\t' '\t' -C Phenotype Cancer Mut Other -k Phenotype | head
+    pysheet -d pheno_2013.05.15.txt cancer_gene_census.tsv -i 3 0 -D '\t' '\t' -C Phenotype Cancer Mut Other -k Phenotype | head
 
 Output:
 
@@ -180,11 +179,11 @@ Now we'd like to reshuffle columns a bit, so we'll use this ordering:
 
 And finally output to a comma-separated file _cancer\_zebrafish.csv_. Use the command:
 
-    ./pysheet.py -d pheno_2013.05.15.txt cancer_gene_census.tsv -i 3 0 -D '\t' '\t' -C Phenotype Cancer Mut Other -k 5 2 3 1 10 -o cancer_zebrafish.csv
+    pysheet -d pheno_2013.05.15.txt cancer_gene_census.tsv -i 3 0 -D '\t' '\t' -C Phenotype Cancer Mut Other -k 5 2 3 1 10 -o cancer_zebrafish.csv
 
 Let's print the headers of this file:
 
-    ./pysheet.py -d cancer_zebrafish.csv -H
+    pysheet -d cancer_zebrafish.csv -H
 
 Output:
 
@@ -204,7 +203,7 @@ or
 
 which implicitly means, "give me all IDs which have a non-blank value under the column _ZFIN Symbol_". Since all rows have a _Human Gene Symbol_ (that was the column which we used to merge the two files), the rows that additionally contain a _ZFIN Symbol_ represent the common genes between our two original files. Let's print them:
 
-    ./pysheet.py -d cancer_zebrafish.csv -q 2 -v | head
+    pysheet -d cancer_zebrafish.csv -q 2 -v | head
 
 Output:
 
@@ -227,7 +226,7 @@ So there are 1925 such cases. This additional information appears because we use
 
 Let's say we are interested in genes involved in _Acute Myeloid Leukemia_ or _AML_. Let's now see the cases which contain _AML_ in the _Phenotype_ column which we created previously:
 
-    ./pysheet.py -d cancer_zebrafish.csv -q 2 'Phenotype~AML'
+    pysheet -d cancer_zebrafish.csv -q 2 'Phenotype~AML'
 
 We get 19 such genes:
 
@@ -253,11 +252,11 @@ We get 19 such genes:
 
 Let's now say we wish to exclude gene _HOXA13_ because we think it's irrelevant. We'll use the special ___Exclude_ column for that. Let's use the `--write`/`-w` argument to the entry _yes_ under the ___Exclude_ column of our spreadsheet.
 
-    ./pysheet.py -d cancer_zebrafish.csv -w HOXA13 __Exclude yes -o cancer_zebrafish.csv
+    pysheet -d cancer_zebrafish.csv -w HOXA13 __Exclude yes -o cancer_zebrafish.csv
 
 And run the previous query again:
 
-    ./pysheet.py -d cancer_zebrafish.csv -q 2 'Phenotype~AML'
+    pysheet -d cancer_zebrafish.csv -q 2 'Phenotype~AML'
 
 Now _HOXA13_ is excluded from our list (but still present in our spreadsheet):
 
@@ -301,27 +300,27 @@ Additionally, you may use `=UNIQUE` to get the first occurence of each item in a
 ### Command-Line Help
 Generated using:
 
-    ./pysheet.py --help
+    pysheet --help
 
 Pasted below:
 
-    usage: pysheet.py [-h] [--dataSheet [FILE [FILE ...]]]
-                      [--dataDelim [CHAR [CHAR ...]]]
-                      [--dataIdCol [INT [INT ...]]]
-                      [--dataNoHeader [Y|N [Y|N ...]]]
-                      [--dataSkipCol [INT [INT ...]]]
-                      [--dataTrans [Y|N [Y|N ...]]] [--outSheet FILE]
-                      [--outDelim CHAR] [--outNoHeaders] [--outTrans]
-                      [--lockFile [LOCKFILE]]
-                      [--write [ID HEADER VALUE [ID HEADER VALUE ...]] | --read
-                      [ID HEADER [ID HEADER ...]] | --remove
-                      [ID HEADER [ID HEADER ...]]]
-                      [--consolidate [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]]
-                      [--clean [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]]
-                      [--mode [append|overwrite|add]]
-                      [--columns [COLUMNS [COLUMNS ...]]]
-                      [--query [QUERY [QUERY ...]]] [--printHeaders] [--version]
-                      [--verbose]
+    usage: pysheet [-h] [--dataSheet [FILE [FILE ...]]]
+                   [--dataDelim [CHAR [CHAR ...]]]
+                   [--dataIdCol [INT [INT ...]]]
+                   [--dataNoHeader [Y|N [Y|N ...]]]
+                   [--dataSkipCol [INT [INT ...]]]
+                   [--dataTrans [Y|N [Y|N ...]]] [--outSheet FILE]
+                   [--outDelim CHAR] [--outNoHeaders] [--outTrans]
+                   [--lockFile [LOCKFILE]]
+                   [--write [ID HEADER VALUE [ID HEADER VALUE ...]] | --read
+                   [ID HEADER [ID HEADER ...]] | --remove
+                   [ID HEADER [ID HEADER ...]]]
+                   [--consolidate [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]]
+                   [--clean [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]]
+                   [--mode [append|overwrite|add]]
+                   [--columns [COLUMNS [COLUMNS ...]]]
+                   [--query [QUERY [QUERY ...]]] [--printHeaders] [--version]
+                   [--verbose]
 
     A library to read and write delimited text files
 
@@ -388,27 +387,27 @@ Pasted below:
     * = can take multiple arguments
 
     Examples:
-        pysheet.py -o mystudy.csv -w ID001 Age 38 ID002 Gender M
+        pysheet -o mystudy.csv -w ID001 Age 38 ID002 Gender M
             create a blank sheet and adds two cell entries to it. Saves it as ./mystudy.csv
         
-        pysheet.py -d mystudy.csv -c Items store -q 'Availability Price>0.5'
+        pysheet -d mystudy.csv -c Items store -q 'Availability Price>0.5'
             consolidate Items across columns whose headers contain keyword 'store'
             then print IDs for Items qith non-blank Availability and price greater than 0.5
         
-        pysheet.py -d /path/table.txt -D'\t' -o ./test/mystudy.csv -k 5 1-3 -v
+        pysheet -d /path/table.txt -D'\t' -o ./test/mystudy.csv -k 5 1-3 -v
             read a tab-delimited sheet and save columns in the order:
             0 (assumed to be IDs) 5,1,2 and 3, in csv format
 
-        pysheet.py -d mystudy.csv mystudy2.csv mystudy3.csv -i 2 2 3 -k
+        pysheet -d mystudy.csv mystudy2.csv mystudy3.csv -i 2 2 3 -k
             merge dataSheets specifying the ID column for each & print resulting table to screen
 
-        pysheet.py -d mystudy.csv -R 01001 Status -o mystudy.csv
+        pysheet -d mystudy.csv -R 01001 Status -o mystudy.csv
             delete entry for ID '01001' and column 'Status'
 
-        pysheet.py -d results.csv -w iteration_$i Result $val -o results.csv -L
-            add an entry to the results sheet (locking before read/write access)
+        touch res.csv; pysheet -d res.csv -w iteration_$i Result $val -o res.csv -L
+            add an entry to the results sheet, locking before read/write access
 
-        pysheet.py -d table.txt -D '\t' -i -1 -k 2 3 1 -o stdout -O '\t' -nh | further_proc
+        pysheet -d table.txt -D '\t' -i -1 -k 2 3 1 -o stdout -O '\t' -nh | further_proc
             rearrange columns of tab-delimited file and forward output to stdout
 
 ### Pydoc
@@ -421,6 +420,9 @@ Generated using:
 Available at [Pysheet.html](http://htmlpreview.github.io/?https://github.com/isthisthat/Pysheet/blob/master/Pysheet.html)
 
 ## Changelog
+### v3.2
+* Pysheet is now all packaged up and available through pip (and easy_install) yay!
+
 ### v3.1
 * Lots of bugfixes
 * Now more robust with empty files
@@ -459,8 +461,6 @@ Available at [Pysheet.html](http://htmlpreview.github.io/?https://github.com/ist
 * Allow indexing by more than one column (e.g. chromosome\_position\_allele)
 * Allow creation of SubSheets, i.e. to extract certain rows and columns from a Pysheet
 * Integrate version control (perhaps git) for disaster recovery of spreadsheets operated on
-* Read global settings from a .pysheetrc rather than hard-code them
-* Submit this as a package to PyPi
 * Please [let me know](https://github.com/isthisthat/Pysheet/issues) if you'd like to see more features!
 
 

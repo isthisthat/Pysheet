@@ -1207,7 +1207,7 @@ class Pysheet:
         try:
             from texttable import Texttable
         except ImportError:
-            return "* Texttable is required to print stuff *"
+            return "* module 'Texttable' is required to print stuff *\n"
         header = [[x.replace('__','') for x in self.getHeaders()]]
         ids = self.getIds()
         ids.sort()
