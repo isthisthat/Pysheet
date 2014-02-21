@@ -1,6 +1,7 @@
 # Pysheet README
 ## Overview
-Pysheet is your best companion to Excel for data management. It can read and write to a spreadsheet, consolidate columns and merge spreadsheets together. It allows you to query for information thus turning your Excel sheet into a little database. It can be used both as a python library and as a command-line tool and supports concurrent access control.
+Now on [pypi](https://pypi.python.org/pypi/pysheet)!
+Pysheet is your best companion for data management. It can read and write to a delimited text file (spreadsheet), consolidate columns and merge spreadsheets together. It allows you to query for information thus turning your text file into a lightweight database. It can be used both as a python library (`from pysheet import Pysheet`) and as a command-line tool (`pysheet -h`) and supports concurrent access control for reading/writing to the same file in parallel.
 
 ## Quick Start
 1. Install using pip:
@@ -31,8 +32,8 @@ _helloworld.csv_ in Excel:
 For a real-life demo and a more in-depth look at Pysheet, let's look at an example from the field of genetics.
 Download the following files:
 
-* A catalogue of genes implicated in cancer [cancer_gene_census.tsv](http://cancer.sanger.ac.uk/cancergenome/data/cancer_gene_census.tsv)
-* Zebrafish genes that have a correspondence (ortholog) in human [ortho_2013.05.15.txt](http://zfin.org/downloads/file/ortho.txt?tsv=2013.05.15)
+* A catalogue of genes implicated in cancer [cancer_gene_census.tsv](http://cancer.sanger.ac.uk/cancergenome/assets/cancer_gene_census.tsv)
+* Zebrafish genes that have a correspondence (ortholog) in human [ortho_2014.02.19.txt](http://zfin.org/downloads/file/ortho.txt?tsv=2014.02.19)
 
 We will try to produce a list of human cancer genes which also exist in Zebrafish (as you might imagine, since humans are more comple organisms, not all human genes will exist in Zebrafish. Similarly, since humans don't have gills, some Zebrafish genes will not be present in humans). The aim is to study these cancer genes in Zebrafish in the laboratory (a controlled environment), rather than on humans.
 
@@ -42,7 +43,7 @@ Let's first get a printout of our two files. We know that the files are tab-deli
 
 From the directory that contains the two above files type:
 
-    pysheet -d ortho_2013.05.15.txt -D'\t' -k | head
+    pysheet -d ortho_2014.02.19.txt -D'\t' -k | head
 
 Output:
 
@@ -87,7 +88,7 @@ We wish to join these two files by Gene Symbol. In the first file, this is the 4
 
 Let's merge these files in memory and print the resulting headers. We'll merge just by providing additional inputs ans then use the `--printHeaders`/`-H` argument in the command:
 
-    pysheet -d pheno_2013.05.15.txt cancer_gene_census.tsv -i 3 0 -D '\t' '\t' -H
+    pysheet -d ortho_2014.02.19.txt cancer_gene_census.tsv -i 3 0 -D '\t' '\t' -H
 
 The output should be:
 
@@ -119,7 +120,7 @@ Let's manipulate the merged file a bit more before we save it. We would like to 
 
 Let's see the resulting headers:
 
-    pysheet -d pheno_2013.05.15.txt cancer_gene_census.tsv -i 3 0 -D '\t' '\t' -C Phenotype Cancer Mut Other -H
+    pysheet -d ortho_2014.02.19.txt cancer_gene_census.tsv -i 3 0 -D '\t' '\t' -C Phenotype Cancer Mut Other -H
 
 Output:
 
@@ -156,7 +157,7 @@ Have been removed and replaced by:
 The double underscore `__` in front of the header name indicates a "locked" header, i.e. do not use this header in further consolidations. But the header can still be called without the double underscore and is also printed without it as you will see below.
 Let's visualise a few lines from this column:
 
-    pysheet -d pheno_2013.05.15.txt cancer_gene_census.tsv -i 3 0 -D '\t' '\t' -C Phenotype Cancer Mut Other -k Phenotype | head
+    pysheet -d ortho_2014.02.19.txt cancer_gene_census.tsv -i 3 0 -D '\t' '\t' -C Phenotype Cancer Mut Other -k Phenotype | head
 
 Output:
 
@@ -179,7 +180,7 @@ Now we'd like to reshuffle columns a bit, so we'll use this ordering:
 
 And finally output to a comma-separated file _cancer\_zebrafish.csv_. Use the command:
 
-    pysheet -d pheno_2013.05.15.txt cancer_gene_census.tsv -i 3 0 -D '\t' '\t' -C Phenotype Cancer Mut Other -k 5 2 3 1 10 -o cancer_zebrafish.csv
+    pysheet -d ortho_2014.02.19.txt cancer_gene_census.tsv -i 3 0 -D '\t' '\t' -C Phenotype Cancer Mut Other -k 5 2 3 1 10 -o cancer_zebrafish.csv
 
 Let's print the headers of this file:
 
