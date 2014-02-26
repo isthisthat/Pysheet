@@ -7,7 +7,7 @@ Copyright (c) 2014, Stathis Kanterakis
 Last Update: Feb 2014
 """
 
-__version__ = "3.1"
+__version__ = "3.2"
 __author__  = "Stathis Kanterakis"
 __license__ = "LGPL"
 
@@ -79,7 +79,7 @@ Examples:
     groupIO.add_argument('--dataTrans', '-t', type=yesNo, nargs='*', default=[False], metavar='Y|N', help='Read dataSheet transposed *')
     groupIO.add_argument('--outSheet', '-o', type=writeable, metavar="FILE", help='Output filename (may include path). Or "stdout" *')
     groupIO.add_argument('--outDelim', '-O', metavar='CHAR', help='Delimiter of output Sheet. Default is comma', default=',')
-    groupIO.add_argument('--outNoHeaders', '-N', action='store_true', help="Don't output header row at the top")
+    groupIO.add_argument('--outNoHeader', '-N', action='store_true', help="Don't output header row at the top")
     groupIO.add_argument('--outTrans', '-T', action='store_true', help='Write outSheet transposed')
     groupIO.add_argument('--lockFile', '-L', nargs='?', type=writeable, help="Read/write lock to prevent parallel jobs from overwriting the dataSheet. Use in asynchronous loops. \
             You may specify a filename (default is <outSheet>.lock)", const=True)
@@ -136,36 +136,27 @@ Examples:
         if args.dataSheet.count("stdin") > 1:
             logger.critical("!!! You can't have two inputs from stdin")
             sys.exit(1)
-        if len(args.dataDelim) != numOfSheets:
-            if len(args.dataDelim) == 1:
-                args.dataDelim = args.dataDelim * numOfSheets # make this the delimiter for all dataSheets
-            else:
-                logger.critical("!!! You must provide either one dataDelim or as many as your dataSheets (%d). Currently: %d" % (numOfSheets, len(args.dataDelim)))
-                sys.exit(1)
-        if len(args.dataIdCol) != numOfSheets:
-            if len(args.dataIdCol) == 1:
-                args.dataIdCol = args.dataIdCol * numOfSheets # make this the idColumn for all dataSheets
-            else:
-                logger.critical("!!! You must provide either one dataIdCol or as many as your dataSheets (%d). Currently: %d" % (numOfSheets, len(args.dataIdCol)))
-                sys.exit(1)
-        if len(args.dataSkipCol) != numOfSheets:
-            if len(args.dataSkipCol) == 1:
-                args.dataSkipCol = args.dataSkipCol * numOfSheets # make this the number of columns to skip for all dataSheets
-            else:
-                logger.critical("!!! You must provide either one dataSkipCol or as many as your dataSheets (%d). Currently: %d" % (numOfSheets, len(args.dataSkipCol)))
-                sys.exit(1)
-        if len(args.dataNoHeader) != numOfSheets:
-            if len(args.dataNoHeader) == 1:
-                args.dataNoHeader = args.dataNoHeader * numOfSheets
-            else:
-                logger.critical("!!! You must enter a value for dataNoHeader either once or for each of your dataSheets (%d times). Currently: %d" % (numOfSheets, len(args.dataNoHeader)))
-                sys.exit(1)
-        if len(args.dataTrans) != numOfSheets:
-            if len(args.dataTrans) == 1:
-                args.dataTrans = args.dataTrans * numOfSheets
-            else:
-                logger.critical("!!! You must enter a value for dataTrans either once or for each of your dataSheets (%d times). Currently: %d" % (numOfSheets, len(args.dataTrans)))
-                sys.exit(1)
+        check_this = ["dataDelim", "dataIdCol", "dataSkipCol", "dataNoHeader", "dataTrans"]
+        for check_name in check_this:
+            assert hasattr(args, check_name)
+            check_values = getattr(args, check_name)
+            if len(check_values) != numOfSheets:
+                if len(check_values) == 0:
+                    logger.critical("!!! No %s value given. Please provide up to %d" % \
+                            (check_name, numOfSheets))
+                    sys.exit(1)
+                elif len(check_values) == 1:
+                    # make this the same for all dataSheets
+                    setattr(args, check_name, check_values * numOfSheets)
+                elif len(check_values) < numOfSheets:
+                    logger.warn("!!! Too few %s: %d. Using last %s (%s) for %d more dataSheets" % \
+                            (check_name, len(check_values), check_name, check_values[-1], \
+                            numOfSheets - len(check_values)))
+                    setattr(args, check_name, check_values + [check_values[-1]] * \
+                            (numOfSheets - len(check_values)))
+                else:
+                    logger.warn("!!! Too many %s: %d. Required up to: %d. Disregarding the rest" % \
+                            (check_name, len(check_values), numOfSheets))
 
     # save once at the end if needed
     save = False
@@ -173,7 +164,7 @@ Examples:
 
     # some IO info
     if args.dataSheet:
-        logger.info("+++ Input file(s): %s" % flatten(args.dataSheet, '\n'))
+        logger.info("+++ Input file(s):\n%s" % flatten(args.dataSheet, '\n'))
     if args.outSheet:
         logger.info("+++ Output file: %s" % args.outSheet)
 
@@ -361,7 +352,7 @@ Examples:
             if args.wait:
                 logger.debug(">>> Sleeping %d sec" % args.wait)
                 sleep(args.wait)
-            mycsv.save(args.outSheet, args.outDelim, not args.outNoHeaders, args.outTrans)
+            mycsv.save(args.outSheet, args.outDelim, not args.outNoHeader, args.outTrans)
             logger.info("=== Saved as: %s" % args.outSheet)
 
     # catch all exception thrown by Pysheet objects
@@ -485,7 +476,8 @@ class Pysheet:
                 while True: # need to go through the file to remove comments and make sure it's square
                     line = iterator.next()
                     line_len = len(line)
-                    if line_len == 0 or str(line[0]).startswith(self.COMMENT_CHAR): # skip blanks and comments
+                    # skip blanks and comments
+                    if line_len < max(self.MIN_LINE_LEN, 1) or str(line[0]).startswith(self.COMMENT_CHAR):
                         continue
                     if line_len < max_line_len:
                         line = line + [self.BLANK_VALUE] * (max_line_len - line_len)
@@ -509,6 +501,7 @@ class Pysheet:
                 self.idColumn = int(idColumn)
                 if self.idColumn < 0: # auto-generate ids!
                     self.idColumn = -1
+                    self.MIN_LINE_LEN -= 1 # accept smaller lines
             except ValueError:
                 self.idColumn = 0
         # start reading
@@ -550,7 +543,7 @@ class Pysheet:
                             thisline.append(self.BLANK_VALUE)
                             line_len += 1
                     if self.idColumn == -1: # auto-generate ids!
-                        thisline.append("R%05d_%s" % (row, self.obj_id))
+                        thisline.append("R%05d" % row)
                         line_len += 1
                     self.rows[clean(sanitize(thisline[self.idColumn]))] = thisline
                 # move to next row
