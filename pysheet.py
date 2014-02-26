@@ -7,7 +7,7 @@ Copyright (c) 2014, Stathis Kanterakis
 Last Update: Feb 2014
 """
 
-__version__ = "3.2"
+__version__ = "3.3"
 __author__  = "Stathis Kanterakis"
 __license__ = "LGPL"
 

@@ -421,6 +421,9 @@ Generated using:
 Available at [Pysheet.html](http://htmlpreview.github.io/?https://github.com/isthisthat/Pysheet/blob/master/Pysheet.html)
 
 ## Changelog
+### v3.3
+* misc improvements
+
 ### v3.2
 * Pysheet is now all packaged up and available through pip (and easy_install) yay!
 

@@ -9,7 +9,7 @@ def read(*paths):
 
 setup(
     name='pysheet',
-    version='0.3.2',
+    version='0.3.3',
     description='Read, write and manipulate delimited text files',
     long_description=(read('README.rst')),
     url='https://github.com/isthisthat/Pysheet',
