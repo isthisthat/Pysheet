@@ -37,7 +37,7 @@ Download the following files:
 
 We will try to produce a list of human cancer genes which also exist in Zebrafish (as you might imagine, since humans are more comple organisms, not all human genes will exist in Zebrafish. Similarly, since humans don't have gills, some Zebrafish genes will not be present in humans). The aim is to study these cancer genes in Zebrafish in the laboratory (a controlled environment), rather than on humans.
 
-Let's first get a printout of our two files. We know that the files are tab-delimited so we will use the `--delimiter`/`-D` argument:
+Let's first get a printout of our two files. We know that the files are tab-delimited so we will use the `--delim`/`-D` argument:
 
     -D'\t'
 
@@ -82,7 +82,7 @@ Output:
     AF5q31      | 27125  | 5   
     AKAP9       | 10142  | 7   
 
-We wish to join these two files by Gene Symbol. In the first file, this is the 4th column, whereas in the second file, this is the 1st column. Therefore we need to specify that the IDs we wish to merge on appear in the 4th column of the first file. We need to use the `--dataIdCol`/`-i` argument:
+We wish to join these two files by Gene Symbol. In the first file, this is the 4th column, whereas in the second file, this is the 1st column. Therefore we need to specify that the IDs we wish to merge on appear in the 4th column of the first file. We need to use the `--idCol`/`-i` argument:
 
     -i3
 
@@ -305,58 +305,55 @@ Generated using:
 
 Pasted below:
 
-    usage: pysheet [-h] [--dataSheet [FILE [FILE ...]]]
-                   [--dataDelim [CHAR [CHAR ...]]]
-                   [--dataIdCol [INT [INT ...]]]
-                   [--dataNoHeader [Y|N [Y|N ...]]]
-                   [--dataSkipCol [INT [INT ...]]]
-                   [--dataTrans [Y|N [Y|N ...]]] [--outSheet FILE]
-                   [--outDelim CHAR] [--outNoHeaders] [--outTrans]
-                   [--lockFile [LOCKFILE]]
-                   [--write [ID HEADER VALUE [ID HEADER VALUE ...]] | --read
-                   [ID HEADER [ID HEADER ...]] | --remove
-                   [ID HEADER [ID HEADER ...]]]
-                   [--consolidate [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]]
-                   [--clean [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]]
-                   [--mode [append|overwrite|add]]
-                   [--columns [COLUMNS [COLUMNS ...]]]
-                   [--query [QUERY [QUERY ...]]] [--printHeaders] [--version]
-                   [--verbose]
-
+    usage: pysheet.py [-h] [--data [FILE [FILE ...]]] [--delim [CHAR [CHAR ...]]]
+                      [--idCol [INT [INT ...]]] [--noHeader [Y|N [Y|N ...]]]
+                      [--skipCol [INT [INT ...]]] [--trans [Y|N [Y|N ...]]]
+                      [--vstack] [--hstack] [--out FILE] [--outDelim CHAR]
+                      [--outNoHeader] [--outTrans] [--lockFile [LOCKFILE]]
+                      [--write [ID HEADER VALUE [ID HEADER VALUE ...]] | --read
+                      [ID HEADER [ID HEADER ...]] | --remove
+                      [ID HEADER [ID HEADER ...]]]
+                      [--consolidate [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]]
+                      [--clean [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]]
+                      [--mode [append|overwrite|add]]
+                      [--columns [COLUMNS [COLUMNS ...]]]
+                      [--query [QUERY [QUERY ...]]] [--printHeaders] [--version]
+                      [--verbose]
+    
     A library to read and write delimited text files
-
+    
     optional arguments:
       -h, --help            show this help message and exit
       --version, -V         show program's version number and exit
       --verbose, -v         verbosity level
-
+    
     Input/Output:
-      --dataSheet [FILE [FILE ...]], -d [FILE [FILE ...]]
+      --data [FILE [FILE ...]], -d [FILE [FILE ...]]
                             Delimited text file with unique IDs in first column
                             (or use -i) and headers in first row. Or "stdin *"
-      --dataDelim [CHAR [CHAR ...]], -D [CHAR [CHAR ...]]
-                            Delimiter of dataSheet. Default is comma *
-      --dataIdCol [INT [INT ...]], -i [INT [INT ...]]
+      --delim [CHAR [CHAR ...]], -D [CHAR [CHAR ...]]
+                            Delimiter of data. Default is comma *
+      --idCol [INT [INT ...]], -i [INT [INT ...]]
                             Column number (starting from 0) of unique IDs. Or "-1"
                             to auto-generate. Default is 0 (1st column) *
-      --dataNoHeader [Y|N [Y|N ...]], -n [Y|N [Y|N ...]]
-                            dataSheet does not contain header row *
-      --dataSkipCol [INT [INT ...]], -s [INT [INT ...]]
+      --noHeader [Y|N [Y|N ...]], -n [Y|N [Y|N ...]]
+                            Data file does not contain headers *
+      --skipCol [INT [INT ...]], -s [INT [INT ...]]
                             Skip this number of rows from top of file *
-      --dataTrans [Y|N [Y|N ...]], -t [Y|N [Y|N ...]]
-                            Read dataSheet transposed *
-      --outSheet FILE, -o FILE
-                            Output filename (may include path). Or "stdout" *
+      --trans [Y|N [Y|N ...]], -t [Y|N [Y|N ...]]
+                            Read data transposed *
+      --vstack, -vs         stack input files by rows (sets auto headers)
+      --hstack, -hs         stack input files by columns (sets auto IDs)
+      --out FILE, -o FILE   Output filename (may include path). Or "stdout" *
       --outDelim CHAR, -O CHAR
-                            Delimiter of output Sheet. Default is comma
-      --outNoHeaders, -N    Don't output header row at the top
-      --outTrans, -T        Write outSheet transposed
+                            Delimiter of output file. Default is comma
+      --outNoHeader, -N     Don't output header row at the top
+      --outTrans, -T        Write output transposed
       --lockFile [LOCKFILE], -L [LOCKFILE]
                             Read/write lock to prevent parallel jobs from
-                            overwriting the dataSheet. Use in asynchronous loops.
-                            You may specify a filename (default is
-                            <outSheet>.lock)
-
+                            overwriting the data. Use in asynchronous loops. You
+                            may specify a filename (default is <out>.lock)
+    
     Read/Write:
       --write [ID HEADER VALUE [ID HEADER VALUE ...]], -w [ID HEADER VALUE [ID HEADER VALUE ...]]
                             Write new cells *
@@ -364,7 +361,7 @@ Pasted below:
                             Print value of cells *
       --remove [ID HEADER [ID HEADER ...]], -R [ID HEADER [ID HEADER ...]]
                             Remove cells *
-
+    
     Consolidate:
       --consolidate [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]], -c [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]
                             Consolidate columns according to keywords *
@@ -375,40 +372,40 @@ Pasted below:
                             id. One of: append (old_value;new_value), overwrite or
                             add (numerical addition). Default is 'smart_append'
                             (append only if value is not already present)
-
+    
     Query:
       --columns [COLUMNS [COLUMNS ...]], -k [COLUMNS [COLUMNS ...]]
-                            Extract specific columns from dataSheet. Default:
-                            print all columns
+                            Extract specific columns from data. Default: print all
+                            columns
       --query [QUERY [QUERY ...]], -q [QUERY [QUERY ...]]
                             Extract IDs that meet a query (NOTE: will not return
                             IDs with entry in special 'Exclude' column)
       --printHeaders, -H    Prints all column headers and their index
-
+    
     * = can take multiple arguments
-
+    
     Examples:
-        pysheet -o mystudy.csv -w ID001 Age 38 ID002 Gender M
+        pysheet.py -o mystudy.csv -w ID001 Age 38 ID002 Gender M
             create a blank sheet and adds two cell entries to it. Saves it as ./mystudy.csv
         
-        pysheet -d mystudy.csv -c Items store -q 'Availability Price>0.5'
+        pysheet.py -d mystudy.csv -c Items store -q 'Availability Price>0.5'
             consolidate Items across columns whose headers contain keyword 'store'
             then print IDs for Items qith non-blank Availability and price greater than 0.5
         
-        pysheet -d /path/table.txt -D'\t' -o ./test/mystudy.csv -k 5 1-3 -v
+        pysheet.py -d /path/table.txt -D'\t' -o ./test/mystudy.csv -k 5 1-3 -v
             read a tab-delimited sheet and save columns in the order:
             0 (assumed to be IDs) 5,1,2 and 3, in csv format
-
-        pysheet -d mystudy.csv mystudy2.csv mystudy3.csv -i 2 2 3 -k
-            merge dataSheets specifying the ID column for each & print resulting table to screen
-
-        pysheet -d mystudy.csv -R 01001 Status -o mystudy.csv
+    
+        pysheet.py -d mystudy.csv mystudy2.csv mystudy3.csv -i 2 2 3 -k
+            merge data files specifying the ID column for each & print resulting table to screen
+    
+        pysheet.py -d mystudy.csv -R 01001 Status -o mystudy.csv
             delete entry for ID '01001' and column 'Status'
-
-        touch res.csv; pysheet -d res.csv -w iteration_$i Result $val -o res.csv -L
-            add an entry to the results sheet, locking before read/write access
-
-        pysheet -d table.txt -D '\t' -i -1 -k 2 3 1 -o stdout -O '\t' -nh | further_proc
+    
+        touch res.csv; pysheet.py -d res.csv -w iteration_$i Result $val -o res.csv -L
+            add an entry to the results file, locking before read/write access
+    
+        pysheet.py -d table.txt -D '\t' -i -1 -k 2 3 1 -o stdout -O '\t' -nh | further_proc
             rearrange columns of tab-delimited file and forward output to stdout
 
 ### Pydoc
@@ -421,6 +418,12 @@ Generated using:
 Available at [Pysheet.html](http://htmlpreview.github.io/?https://github.com/isthisthat/Pysheet/blob/master/Pysheet.html)
 
 ## Changelog
+
+### v3.4
+* added `--vstack` and `--hstack` options for cases where you just need to concatenate rows or columns of data
+* shortened the name some of the command-line parameters
+* misc improvements
+
 ### v3.3
 * misc improvements
 
