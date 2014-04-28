@@ -419,16 +419,19 @@ Available at [Pysheet.html](http://htmlpreview.github.io/?https://github.com/ist
 
 ## Changelog
 
+### v3.5
+* Fixed a bug when casting a string to a number
+
 ### v3.4
-* added `--vstack` and `--hstack` options for cases where you just need to concatenate rows or columns of data
-* shortened the name some of the command-line parameters
-* misc improvements
+* Added `--vstack` and `--hstack` options for cases where you just need to concatenate rows or columns of data
+* Shortened the name of some of the command-line parameters
+* Misc improvements
 
 ### v3.3
-* misc improvements
+* Misc improvements
 
 ### v3.2
-* Pysheet is now all packaged up and available through pip (and easy_install) yay!
+* Pysheet is now all packaged up and available through `pip` (and `easy_install`) yay!
 
 ### v3.1
 * Lots of bugfixes
@@ -441,22 +444,22 @@ Available at [Pysheet.html](http://htmlpreview.github.io/?https://github.com/ist
 * Fixed bug when merging files with auto-IDs
 
 ### v2.2
-* Added option to transpose input (-t)
+* Added option to transpose input (`-t`)
 * If table is too wide to print in the terminal, give a message instead of an exception
 * Cleaned up help a bit and used some of pylint's suggestions
 
 ### v2.1
-* Added option to read in a spreadsheet that has no headers (-n)
-* Added option to control what happens when the user attempts to overwrite a cell (see --mode)
+* Added option to read in a spreadsheet that has no headers (`-n`)
+* Added option to control what happens when the user attempts to overwrite a cell (see `--mode`)
 * Fixed minor bugs
 
 ### v2.0
-* Added input/output from/to stdin/stdout
+* Added input/output from/to `stdin`/`stdout`
 * Indexing column can now be user-specified
 * Enabled automatic indexing (in case there is no unique-ID column)
 * Added options to deal with headers and comments
 * Added tests!
-* Made README and example
+* Made `README` and example
 * Lots of refactoring to make code more robust
 
 ### v1.0

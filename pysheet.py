@@ -7,7 +7,7 @@ Copyright (c) 2014, Stathis Kanterakis
 Last Update: April 2014
 """
 
-__version__ = "3.4"
+__version__ = "3.5"
 __author__  = "Stathis Kanterakis"
 __license__ = "LGPL"
 
@@ -86,9 +86,9 @@ Examples:
     groupIO.add_argument('--trans', '-t', type=yesNo, nargs='*', default=[False], \
             metavar='Y|N', help='Read data transposed *')
     groupIO.add_argument('--vstack', '-vs', action='store_true', \
-            help='stack input files by rows (sets auto headers)')
+            help='Stack input files by rows (sets auto headers)')
     groupIO.add_argument('--hstack', '-hs', action='store_true', \
-            help='stack input files by columns (sets auto IDs)')
+            help='Stack input files by columns (sets auto IDs)')
     groupIO.add_argument('--out', '-o', type=writeable, metavar="FILE", \
             help='Output filename (may include path). Or "stdout" *')
     groupIO.add_argument('--outDelim', '-O', metavar='CHAR', \
@@ -445,7 +445,7 @@ class Pysheet:
     delimiter = None # the sheet delimiter
     rows      = None # the dictionary that maps an ID to its row
     idColumn  = 0    # the column index that contains the IDs
-    obj_id   = None  # an id to distinguish between objects
+    obj_id    = None  # an id to distinguish between objects
 
     def __init__(self, filename=None, delimiter=',', iterable=None, idColumn=None, skip=0, \
             noHeader=False, vstack=False, hstack=False, trans=False):
@@ -453,7 +453,7 @@ class Pysheet:
         Optionally specify the column number that contains the unique IDs (starting from 0)"""
         # set IDs
         if not self.obj_id:
-            self.obj_id = randomId() #str(id(self))
+            self.obj_id = "_" + randomId() #str(id(self))
             self.HEADERS_ID = self.HEADERS_ID + self.obj_id
             self.AUTO_ID_HEADER = self.AUTO_ID_HEADER + self.obj_id
             self.FLAG_VALUE = self.FLAG_VALUE + self.obj_id
@@ -593,7 +593,7 @@ class Pysheet:
                             self.rows[self.HEADERS_ID] = ["C%03d" % (col+1) \
                                     for col in range(head_len)]
                         else: # else add the object's unique id
-                            self.rows[self.HEADERS_ID] = ["C%03d_%s" % (col+1, self.obj_id) \
+                            self.rows[self.HEADERS_ID] = ["C%03d%s" % (col+1, self.obj_id) \
                                     for col in range(head_len)]
                         row+=1 # so that this line gets added below
                     else:
@@ -619,7 +619,7 @@ class Pysheet:
                         if hstack:
                             thisline.append("R%05d" % row)
                         else:
-                            thisline.append("R%05d_%s" % (row, self.obj_id))
+                            thisline.append("R%05d%s" % (row, self.obj_id))
                         line_len += 1
                     self.rows[clean(sanitize(thisline[self.idColumn]))] = thisline
                 # move to next row
@@ -1393,14 +1393,14 @@ def tryNumber(x):
     if isList(x):
         return [tryNumber(i) for i in x]
     try:
-        f = float(x)
-        i = int(x) # will make long if long int!
-        if f == i:
-            return i
-        else:
-            return f
+        n = int(x) # will make long if long int!
+        return n
     except ValueError:
-        return x
+        try:
+            f = float(x)
+            return f
+        except ValueError:
+            return x
 
 def transpose(arr):
     """transposes a nested list (2D-array)"""
