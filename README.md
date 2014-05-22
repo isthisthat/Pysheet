@@ -419,6 +419,10 @@ Available at [Pysheet.html](http://htmlpreview.github.io/?https://github.com/ist
 
 ## Changelog
 
+### v3.6
+* Added outHeaders option to allow user to replace output headers
+* Misc cosmetic fixes
+
 ### v3.5
 * Fixed a bug when casting a string to a number
 

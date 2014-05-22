@@ -7,7 +7,7 @@ Copyright (c) 2014, Stathis Kanterakis
 Last Update: April 2014
 """
 
-__version__ = "3.5"
+__version__ = "3.6"
 __author__  = "Stathis Kanterakis"
 __license__ = "LGPL"
 
@@ -70,36 +70,36 @@ Examples:
     %(prog)s -d table.txt -D '\\t' -i -1 -k 2 3 1 -o stdout -O '\\t' -nh | further_proc
         rearrange columns of tab-delimited file and forward output to stdout
 """)
-    groupIO = parser.add_argument_group('Input/Output')
-    groupIO.add_argument('--data', '-d', type=readable, nargs='*', metavar="FILE", \
+    groupI = parser.add_argument_group('Input')
+    groupI.add_argument('--data', '-d', type=readable, nargs='*', metavar="FILE", \
             default=[None], help='Delimited text file with unique IDs in first column '
             '(or use -i) and headers in first row. Or "stdin *"')
-    groupIO.add_argument('--delim', '-D', metavar='CHAR', nargs='*', default=[','], \
+    groupI.add_argument('--delim', '-D', metavar='CHAR', nargs='*', default=[','], \
             help='Delimiter of data. Default is comma *')
-    groupIO.add_argument('--idCol', '-i', type=int, nargs='*', default=[0], \
+    groupI.add_argument('--idCol', '-i', type=int, nargs='*', default=[0], \
             metavar='INT', help='Column number (starting from 0) of unique IDs. Or "-1" '
             'to auto-generate. Default is 0 (1st column) *')
-    groupIO.add_argument('--noHeader', '-n', type=yesNo, nargs='*', default=[False], \
+    groupI.add_argument('--noHeader', '-n', type=yesNo, nargs='*', default=[False], \
             metavar='Y|N', help='Data file does not contain headers *')
-    groupIO.add_argument('--skipCol', '-s', type=int, nargs='*', default=[0], \
+    groupI.add_argument('--skipCol', '-s', type=int, nargs='*', default=[0], \
             metavar='INT', help='Skip this number of rows from top of file *')
-    groupIO.add_argument('--trans', '-t', type=yesNo, nargs='*', default=[False], \
+    groupI.add_argument('--trans', '-t', type=yesNo, nargs='*', default=[False], \
             metavar='Y|N', help='Read data transposed *')
-    groupIO.add_argument('--vstack', '-vs', action='store_true', \
+    groupI.add_argument('--vstack', '-vs', action='store_true', \
             help='Stack input files by rows (sets auto headers)')
-    groupIO.add_argument('--hstack', '-hs', action='store_true', \
+    groupI.add_argument('--hstack', '-hs', action='store_true', \
             help='Stack input files by columns (sets auto IDs)')
-    groupIO.add_argument('--out', '-o', type=writeable, metavar="FILE", \
+
+    groupO = parser.add_argument_group('Output')
+    groupO.add_argument('--out', '-o', type=writeable, metavar="FILE", \
             help='Output filename (may include path). Or "stdout" *')
-    groupIO.add_argument('--outDelim', '-O', metavar='CHAR', \
+    groupO.add_argument('--outDelim', '-O', metavar='CHAR', \
             help='Delimiter of output file. Default is comma', default=',')
-    groupIO.add_argument('--outNoHeader', '-N', action='store_true', \
+    groupO.add_argument('--outHeader', '-OH', nargs='*', metavar="HEADER", \
+            help="Replace output header with this list")
+    groupO.add_argument('--outNoHeader', '-N', action='store_true', \
             help="Don't output header row at the top")
-    groupIO.add_argument('--outTrans', '-T', action='store_true', help='Write output transposed')
-    groupIO.add_argument('--lockFile', '-L', nargs='?', type=writeable, \
-            help="Read/write lock to prevent parallel jobs from overwriting the data. "
-            "Use in asynchronous loops. You may specify a filename (default is <out>.lock)", \
-                    const=True)
+    groupO.add_argument('--outTrans', '-T', action='store_true', help='Write output transposed')
 
     groupRW = parser.add_argument_group('Read/Write')
     groupRW_me = groupRW.add_mutually_exclusive_group()
@@ -109,6 +109,10 @@ Examples:
             help="Print value of cells *")
     groupRW_me.add_argument('--remove', '-R', nargs='*', metavar="ID HEADER", \
             help="Remove cells *")
+    groupRW.add_argument('--lockFile', '-L', nargs='?', type=writeable, \
+            help="Read/write lock to prevent parallel jobs from overwriting the data. "
+            "Use in asynchronous loops. You may specify a filename (default is <out>.lock)", \
+                    const=True)
 
     groupC = parser.add_argument_group('Consolidate')
     groupC.add_argument('--consolidate', '-c', nargs='*', action='append', \
@@ -129,8 +133,10 @@ Examples:
             "(NOTE: will not return IDs with entry in special 'Exclude' column)")
     groupQ.add_argument('--printHeaders', '-H', action='store_true', \
             help="Prints all column headers and their index")
+
     # this is for testing purposes. will sleep before writing to test locking stuff..
     parser.add_argument('--wait', type=int, help=argparse.SUPPRESS)
+
     parser.add_argument('catchall', nargs=argparse.REMAINDER, help=argparse.SUPPRESS)
 
     parser.add_argument('--version', '-V', action='version', version="%(prog)s v" + __version__)
@@ -363,6 +369,7 @@ Examples:
             if not args.columns == []:
                 # if we got some column spec, extract columns (else print all)
                 cols = Pysheet()
+                cols.obj_id = "output" + cols.obj_id
                 cols.load(mycsv.getColumns(args.columns, blanks=True, exclude=False))
                 mycsv = cols # make this the current spreadsheet
             if not args.out and not args.query and not args.read and not args.printHeaders:
@@ -406,7 +413,7 @@ Examples:
             if args.wait:
                 logger.debug(">>> Sleeping %d sec" % args.wait)
                 sleep(args.wait)
-            mycsv.save(args.out, args.outDelim, not args.outNoHeader, args.outTrans)
+            mycsv.save(args.out, args.outDelim, not args.outNoHeader, args.outHeader, args.outTrans)
             logger.info("=== Saved as: %s" % args.out)
 
     # catch all exception thrown by Pysheet objects
@@ -454,9 +461,9 @@ class Pysheet:
         # set IDs
         if not self.obj_id:
             self.obj_id = "_" + randomId() #str(id(self))
-            self.HEADERS_ID = self.HEADERS_ID + self.obj_id
-            self.AUTO_ID_HEADER = self.AUTO_ID_HEADER + self.obj_id
-            self.FLAG_VALUE = self.FLAG_VALUE + self.obj_id
+            #self.HEADERS_ID = self.HEADERS_ID + self.obj_id
+            #self.AUTO_ID_HEADER = self.AUTO_ID_HEADER + self.obj_id
+            #self.FLAG_VALUE = self.FLAG_VALUE + self.obj_id
         else:
             sys.stderr.write("!!! Re-initialising %s\n" % self.obj_id)
         # set filename
@@ -1227,7 +1234,7 @@ class Pysheet:
         levs = unique(tryNumber(qcolumn[offset:]), blanks=False)
         return (levs, isNumber(levs), len(levs))
 
-    def save(self, output=None, delimiter=',', saveHeaders=True, trans=False):
+    def save(self, output=None, delimiter=',', saveHeaders=True, replaceHeaders=None, trans=False):
         """saves the current state of the dictionary as a delimited text file"""
         # check output
         if not output:
@@ -1259,10 +1266,16 @@ class Pysheet:
         # set the header row on top first
         if saveHeaders:
             if skipAutoID:
-                ret = [self.rows[self.HEADERS_ID][:self.idColumn] + \
-                        self.rows[self.HEADERS_ID][(self.idColumn+1):]]
+                header = self.rows[self.HEADERS_ID][:self.idColumn] + \
+                        self.rows[self.HEADERS_ID][(self.idColumn+1):]
             else:
-                ret = [self.rows[self.HEADERS_ID]]
+                header = self.rows[self.HEADERS_ID]
+            if replaceHeaders and len(replaceHeaders) != len(header):
+                raise PysheetException(("Output headers given do not match number of "
+                "output columns (%d)!\n%s") % (len(header), flatten(replaceHeaders, ", ")))
+            elif replaceHeaders:
+                header = replaceHeaders
+            ret = [header]
         # now the content
         for k in keys:
             if k == self.HEADERS_ID:
