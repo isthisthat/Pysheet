@@ -6,12 +6,12 @@ Pysheet is your best companion for data management. It can read and write to a d
 ## Quick Start
 1. Install using pip:
 
-        pip install pysheet
+    pip install pysheet
 
 3. Try the following commands:
 
-        pysheet -o helloworld.csv --write 1 A Pysheet 2 B your 3 C best 4 D companion 5 E to 6 F Excel -v
-        pysheet -d helloworld.csv --columns 4 2 1 3 5 6
+    pysheet -o helloworld.csv --write 1 A Pysheet 2 B your 3 C best 4 D companion 5 E to 6 F Excel -v
+    pysheet -d helloworld.csv --columns 4 2 1 3 5 6
 
 Output:
 
@@ -424,7 +424,7 @@ Available at [Pysheet.html](http://htmlpreview.github.io/?https://github.com/ist
 ## Changelog
 
 ### v3.7
-* Using OrderedDict so that if index column is not specified, return rows in input order
+* Using `OrderedDict` so that if index column is not specified, return rows in input order
 * Changed `--hstack` to `--cstack` (columns) and `--vstack` to `--rstack` (rows) for clarity
 * Added option to manually specify output headers `--outHeader`
 
