@@ -33,12 +33,12 @@ class TestFunctions(unittest.TestCase):
     self.assertEqual(p[3],None)
     p = Pysheet(iterable=self.table, trans=True)
     self.assertEqual(p.getHeaders(),['ID', '1', '2', '99', '88'])
-    p = Pysheet(iterable=self.table, trans=True, hstack=True) + \
-            Pysheet(iterable=self.table, hstack=True)
+    p = Pysheet(iterable=self.table, trans=True, cstack=True) + \
+            Pysheet(iterable=self.table, cstack=True)
     self.assertEqual(len(p),11)
     self.assertEqual(p.height(),5)
-    p = Pysheet(iterable=self.table, trans=True, vstack=True) + \
-            Pysheet(iterable=self.table, vstack=True)
+    p = Pysheet(iterable=self.table, trans=True, rstack=True) + \
+            Pysheet(iterable=self.table, rstack=True)
     p.contract()
     self.assertEqual(len(p),5)
     self.assertEqual(p.height(),9)

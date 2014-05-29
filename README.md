@@ -308,11 +308,12 @@ Pasted below:
     usage: pysheet.py [-h] [--data [FILE [FILE ...]]] [--delim [CHAR [CHAR ...]]]
                       [--idCol [INT [INT ...]]] [--noHeader [Y|N [Y|N ...]]]
                       [--skipCol [INT [INT ...]]] [--trans [Y|N [Y|N ...]]]
-                      [--vstack] [--hstack] [--out FILE] [--outDelim CHAR]
-                      [--outNoHeader] [--outTrans] [--lockFile [LOCKFILE]]
+                      [--rstack] [--cstack] [--out FILE] [--outDelim CHAR]
+                      [--outHeader [HEADER [HEADER ...]]] [--outNoHeader]
+                      [--outTrans]
                       [--write [ID HEADER VALUE [ID HEADER VALUE ...]] | --read
                       [ID HEADER [ID HEADER ...]] | --remove
-                      [ID HEADER [ID HEADER ...]]]
+                      [ID HEADER [ID HEADER ...]]] [--lockFile [LOCKFILE]]
                       [--consolidate [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]]
                       [--clean [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]]
                       [--mode [append|overwrite|add]]
@@ -327,7 +328,7 @@ Pasted below:
       --version, -V         show program's version number and exit
       --verbose, -v         verbosity level
     
-    Input/Output:
+    Input:
       --data [FILE [FILE ...]], -d [FILE [FILE ...]]
                             Delimited text file with unique IDs in first column
                             (or use -i) and headers in first row. Or "stdin *"
@@ -342,17 +343,17 @@ Pasted below:
                             Skip this number of rows from top of file *
       --trans [Y|N [Y|N ...]], -t [Y|N [Y|N ...]]
                             Read data transposed *
-      --vstack, -vs         stack input files by rows (sets auto headers)
-      --hstack, -hs         stack input files by columns (sets auto IDs)
+      --rstack, -rs         Stack input files by rows (regardless of headers)
+      --cstack, -cs         Stack input files by columns (regardless of IDs)
+    
+    Output:
       --out FILE, -o FILE   Output filename (may include path). Or "stdout" *
       --outDelim CHAR, -O CHAR
                             Delimiter of output file. Default is comma
+      --outHeader [HEADER [HEADER ...]], -OH [HEADER [HEADER ...]]
+                            Replace output header with this list
       --outNoHeader, -N     Don't output header row at the top
       --outTrans, -T        Write output transposed
-      --lockFile [LOCKFILE], -L [LOCKFILE]
-                            Read/write lock to prevent parallel jobs from
-                            overwriting the data. Use in asynchronous loops. You
-                            may specify a filename (default is <out>.lock)
     
     Read/Write:
       --write [ID HEADER VALUE [ID HEADER VALUE ...]], -w [ID HEADER VALUE [ID HEADER VALUE ...]]
@@ -361,6 +362,10 @@ Pasted below:
                             Print value of cells *
       --remove [ID HEADER [ID HEADER ...]], -R [ID HEADER [ID HEADER ...]]
                             Remove cells *
+      --lockFile [LOCKFILE], -L [LOCKFILE]
+                            Read/write lock to prevent parallel jobs from
+                            overwriting the data. Use in asynchronous loops. You
+                            may specify a filename (default is <out>.lock)
     
     Consolidate:
       --consolidate [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]], -c [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]
@@ -405,9 +410,8 @@ Pasted below:
         touch res.csv; pysheet.py -d res.csv -w iteration_$i Result $val -o res.csv -L
             add an entry to the results file, locking before read/write access
     
-        pysheet.py -d table.txt -D '\t' -i -1 -k 2 3 1 -o stdout -O '\t' -nh | further_proc
+        pysheet.py -d table.txt -D '\t' -i -1 -k 2 3 1 -o stdout -O '\t' -n | further_proc
             rearrange columns of tab-delimited file and forward output to stdout
-
 ### Pydoc
 Generated using:
 
@@ -418,6 +422,11 @@ Generated using:
 Available at [Pysheet.html](http://htmlpreview.github.io/?https://github.com/isthisthat/Pysheet/blob/master/Pysheet.html)
 
 ## Changelog
+
+### v3.7
+* Using OrderedDict so that if index column is not specified, return rows in input order
+* Changed `--hstack` to `--cstack` (columns) and `--vstack` to `--rstack` (rows) for clarity
+* Added option to manually specify output headers `--outHeader`
 
 ### v3.6
 * Added outHeaders option to allow user to replace output headers

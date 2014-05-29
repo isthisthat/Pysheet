@@ -7,7 +7,7 @@ Copyright (c) 2014, Stathis Kanterakis
 Last Update: April 2014
 """
 
-__version__ = "3.6"
+__version__ = "3.7"
 __author__  = "Stathis Kanterakis"
 __license__ = "LGPL"
 
@@ -21,6 +21,7 @@ from time import sleep
 from datetime import datetime
 from random import random
 from signal import signal, SIGPIPE, SIG_DFL
+from collections import OrderedDict
 
 # don't throw exceptions on closed pipes..
 signal(SIGPIPE,SIG_DFL)
@@ -67,7 +68,7 @@ Examples:
     touch res.csv; %(prog)s -d res.csv -w iteration_$i Result $val -o res.csv -L
         add an entry to the results file, locking before read/write access
 
-    %(prog)s -d table.txt -D '\\t' -i -1 -k 2 3 1 -o stdout -O '\\t' -nh | further_proc
+    %(prog)s -d table.txt -D '\\t' -i -1 -k 2 3 1 -o stdout -O '\\t' -n | further_proc
         rearrange columns of tab-delimited file and forward output to stdout
 """)
     groupI = parser.add_argument_group('Input')
@@ -85,10 +86,10 @@ Examples:
             metavar='INT', help='Skip this number of rows from top of file *')
     groupI.add_argument('--trans', '-t', type=yesNo, nargs='*', default=[False], \
             metavar='Y|N', help='Read data transposed *')
-    groupI.add_argument('--vstack', '-vs', action='store_true', \
-            help='Stack input files by rows (sets auto headers)')
-    groupI.add_argument('--hstack', '-hs', action='store_true', \
-            help='Stack input files by columns (sets auto IDs)')
+    groupI.add_argument('--rstack', '-rs', action='store_true', \
+            help='Stack input files by rows (regardless of headers)')
+    groupI.add_argument('--cstack', '-cs', action='store_true', \
+            help='Stack input files by columns (regardless of IDs)')
 
     groupO = parser.add_argument_group('Output')
     groupO.add_argument('--out', '-o', type=writeable, metavar="FILE", \
@@ -298,16 +299,16 @@ Examples:
     try:
         # now read the file
         mycsv = Pysheet(args.data[0], delimiter=args.delim[0], idColumn=args.idCol[0], \
-                skip=args.skipCol[0], noHeader=args.noHeader[0], vstack=args.vstack, \
-                hstack=args.hstack, trans=args.trans[0])
+                skip=args.skipCol[0], noHeader=args.noHeader[0], rstack=args.rstack, \
+                cstack=args.cstack, trans=args.trans[0])
 
         # merge
         if numOfSheets > 1:
             for m in range(1, numOfSheets):
                 myothercsv = Pysheet(args.data[m], delimiter=args.delim[m], \
                         idColumn=args.idCol[m], skip=args.skipCol[m], \
-                        noHeader=args.noHeader[m], vstack=args.vstack, \
-                        hstack=args.hstack, trans=args.trans[m])
+                        noHeader=args.noHeader[m], rstack=args.rstack, \
+                        cstack=args.cstack, trans=args.trans[m])
                 mycsv += myothercsv # __add__
                 mycsv.contract(mode=args.mode) # merge same columns
 
@@ -455,7 +456,7 @@ class Pysheet:
     obj_id    = None  # an id to distinguish between objects
 
     def __init__(self, filename=None, delimiter=',', iterable=None, idColumn=None, skip=0, \
-            noHeader=False, vstack=False, hstack=False, trans=False):
+            noHeader=False, rstack=False, cstack=False, trans=False):
         """initializes the object and reads in a sheet from a file or an iterable.
         Optionally specify the column number that contains the unique IDs (starting from 0)"""
         # set IDs
@@ -485,14 +486,14 @@ class Pysheet:
         #self.rows = {}
         # and call the appropriate loader
         if filename and (os.path.exists(filename) or filename == 'stdin'):
-            self.loadFile(self.filename, self.idColumn, skip, noHeader, vstack, hstack, trans)
+            self.loadFile(self.filename, self.idColumn, skip, noHeader, rstack, cstack, trans)
         elif iterable:
-            self.load(iterable, self.idColumn, skip, noHeader, vstack, hstack, trans)
+            self.load(iterable, self.idColumn, skip, noHeader, rstack, cstack, trans)
         else:
             self.clear()
 
-    def loadFile(self, filename, idColumn=None, skip=0, noHeader=False, vstack=False, \
-            hstack=False, trans=False):
+    def loadFile(self, filename, idColumn=None, skip=0, noHeader=False, rstack=False, \
+            cstack=False, trans=False):
         """loads the sheet into a dictionary where the IDs in the first column are
         mapped to their rows. Optionally specify the column number that contains
         the unique IDs (starting from 0)"""
@@ -509,10 +510,10 @@ class Pysheet:
                 self.idColumn = int(idColumn)
             except ValueError as e:
                 self.idColumn = 0
-        self.load(reader, self.idColumn, skip, noHeader, vstack, hstack, trans)
+        self.load(reader, self.idColumn, skip, noHeader, rstack, cstack, trans)
 
-    def load(self, iterable, idColumn=None, skip=0, noHeader=False, vstack=False, \
-            hstack=False, trans=False):
+    def load(self, iterable, idColumn=None, skip=0, noHeader=False, rstack=False, \
+            cstack=False, trans=False):
         """creates a Pysheet object from an iterable.
         Optionally specify the column number that contains the unique IDs (starting from 0)"""
         name = os.path.basename(self.filename) if self.filename else self.obj_id
@@ -527,12 +528,12 @@ class Pysheet:
         except TypeError:
             raise PysheetException("%s is not iterable!" % iterable)
 
-        # if vstack (rows) then we need auto headers internally
-        if vstack:
+        # if rstack (rows) then we need auto headers internally
+        if rstack:
             noHeader = True
 
-        # if hstack (cols) then we need auto ids internally
-        if hstack:
+        # if cstack (cols) then we need auto ids internally
+        if cstack:
             idColumn = -1
 
         # set id column
@@ -596,7 +597,7 @@ class Pysheet:
                                 (head_len-1))
                     # load headers
                     if noHeader:
-                        if vstack:
+                        if rstack:
                             self.rows[self.HEADERS_ID] = ["C%03d" % (col+1) \
                                     for col in range(head_len)]
                         else: # else add the object's unique id
@@ -623,7 +624,7 @@ class Pysheet:
                             thisline.append(self.BLANK_VALUE)
                             line_len += 1
                     if self.idColumn == -1: # auto-generate ids!
-                        if hstack:
+                        if cstack:
                             thisline.append("R%05d" % row)
                         else:
                             thisline.append("R%05d%s" % (row, self.obj_id))
@@ -653,7 +654,8 @@ class Pysheet:
 
     def clear(self):
         """clears the object"""
-        self.rows={self.HEADERS_ID:["ID"]}
+        self.rows = OrderedDict()
+        self.rows[self.HEADERS_ID] = ["ID"]
 
     def __iter__(self):
         """returns an iterator over the ID:row items in the csv"""
@@ -1253,7 +1255,6 @@ class Pysheet:
         else:
             writer = csv.writer(open(output, "wb"), delimiter=delimiter)
         keys = self.rows.keys()
-        keys.sort()
         skipAutoID = False
         skipAutoIDColumn = -1
         ret = []
@@ -1263,6 +1264,8 @@ class Pysheet:
             skipAutoIDColumn = self.idColumn
             if skipAutoIDColumn < 0:
                 skipAutoIDColumn = len(self) + skipAutoIDColumn
+        else: # sort only if we have proper IDs
+            keys.sort()
         # set the header row on top first
         if saveHeaders:
             if skipAutoID:
