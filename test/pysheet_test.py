@@ -110,7 +110,7 @@ class TestFunctions(unittest.TestCase):
 '             | oncogene     |              |              |              \n',
 '             | homolog 1    |              |              |              \n'\
 ]
-    cmd = "%s -d %s -D \\t -k 1-4" % (pysheet, cgc)
+    cmd = "%s -d %s -k 1-4" % (pysheet, cgc)
     p = Popen(cmd.split(), stdout=PIPE)
     myout = p.stdout.readlines()
     self.assertEqual(myout[:9], out)
@@ -123,7 +123,7 @@ class TestFunctions(unittest.TestCase):
 'MYH11\n',
 'NUP98\n'\
 ]
-    cmd = "%s -d %s %s -i 3 0 -D \\t \\t -q" % (pysheet, ortho, cgc)
+    cmd = "%s -d %s %s -i 3 0 -D \\t -q" % (pysheet, ortho, cgc)
     p = Popen(cmd.split() + ['ZFIN ID','Tumour Types  (Somatic Mutations)=AML'], stdout=PIPE)
     myout = p.stdout.readlines()
     self.assertEqual(myout, out)
@@ -148,7 +148,7 @@ class TestFunctions(unittest.TestCase):
 'PTPN11\n',
 'RUNX1\n'\
 ]
-    cmd = "%s -d %s %s -i 3 0 -D \\t \\t -q" % (pysheet, ortho, cgc)
+    cmd = "%s -d %s %s -i 3 0 -q" % (pysheet, ortho, cgc)
     p = Popen(cmd.split() + ['ZFIN ID','Tumour Types  (Somatic Mutations)~AML'], stdout=PIPE)
     myout = p.stdout.readlines()
     self.assertEqual(myout, out)

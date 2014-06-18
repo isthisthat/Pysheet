@@ -333,7 +333,7 @@ Pasted below:
                             Delimited text file with unique IDs in first column
                             (or use -i) and headers in first row. Or "stdin *"
       --delim [CHAR [CHAR ...]], -D [CHAR [CHAR ...]]
-                            Delimiter of data. Default is comma *
+                            Delimiter of data. Default is auto-detect *
       --idCol [INT [INT ...]], -i [INT [INT ...]]
                             Column number (starting from 0) of unique IDs. Or "-1"
                             to auto-generate. Default is 0 (1st column) *
@@ -422,6 +422,9 @@ Generated using:
 Available at [Pysheet.html](http://htmlpreview.github.io/?https://github.com/isthisthat/Pysheet/blob/master/Pysheet.html)
 
 ## Changelog
+
+### v3.8
+* Now detects input delimiter automatically
 
 ### v3.7
 * Using `OrderedDict` so that if index column is not specified, return rows in input order

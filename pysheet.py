@@ -7,7 +7,7 @@ Copyright (c) 2014, Stathis Kanterakis
 Last Update: April 2014
 """
 
-__version__ = "3.7"
+__version__ = "3.8"
 __author__  = "Stathis Kanterakis"
 __license__ = "LGPL"
 
@@ -75,8 +75,8 @@ Examples:
     groupI.add_argument('--data', '-d', type=readable, nargs='*', metavar="FILE", \
             default=[None], help='Delimited text file with unique IDs in first column '
             '(or use -i) and headers in first row. Or "stdin *"')
-    groupI.add_argument('--delim', '-D', metavar='CHAR', nargs='*', default=[','], \
-            help='Delimiter of data. Default is comma *')
+    groupI.add_argument('--delim', '-D', metavar='CHAR', nargs='*', default=[None], \
+            help='Delimiter of data. Default is auto-detect *')
     groupI.add_argument('--idCol', '-i', type=int, nargs='*', default=[0], \
             metavar='INT', help='Column number (starting from 0) of unique IDs. Or "-1" '
             'to auto-generate. Default is 0 (1st column) *')
@@ -419,7 +419,7 @@ Examples:
 
     # catch all exception thrown by Pysheet objects
     except PysheetException as e:
-        print "!!! Pysheet Error: %s" % e.message
+        print e.message
         sys.exit(3)
     except KeyboardInterrupt:
         print "!!! Interrupted"
@@ -455,7 +455,7 @@ class Pysheet:
     idColumn  = 0    # the column index that contains the IDs
     obj_id    = None  # an id to distinguish between objects
 
-    def __init__(self, filename=None, delimiter=',', iterable=None, idColumn=None, skip=0, \
+    def __init__(self, filename=None, delimiter=None, iterable=None, idColumn=None, skip=0, \
             noHeader=False, rstack=False, cstack=False, trans=False):
         """initializes the object and reads in a sheet from a file or an iterable.
         Optionally specify the column number that contains the unique IDs (starting from 0)"""
@@ -478,8 +478,6 @@ class Pysheet:
         # set delimiter
         if delimiter == r'\t':
             self.delimiter = "\t"
-        elif delimiter == r'\s':
-            self.delimiter = "\s"
         else:
             self.delimiter = delimiter
         # initialize dictionary
@@ -499,11 +497,24 @@ class Pysheet:
         the unique IDs (starting from 0)"""
         try:
             if filename == 'stdin':
-                reader = csv.reader(sys.stdin, delimiter=self.delimiter)
+                csvfile = sys.stdin
+                if not self.delimiter:
+                    raise PysheetException("Delimiter cannot not be auto-detected from stdin. "
+                    "Please supply -D", filename)
             else:
-                reader = csv.reader(open(filename, "rUb"), delimiter=self.delimiter)
+                csvfile = open(filename, "rUb")
+            if self.delimiter:
+                reader = csv.reader(csvfile, delimiter=self.delimiter)
+            else:
+                sniffer = csv.Sniffer()
+                dialect = sniffer.sniff(csvfile.read(5000))
+                csvfile.seek(0)
+                reader = csv.reader(csvfile, dialect)
+                self.delimiter = dialect.delimiter
         except csv.Error as e:
             raise PysheetException(e, filename)
+        except IOError as e:
+            raise PysheetException("Delimiter could not be auto-detected. Please supply -D", filename)
         self.filename = filename
         if idColumn != None:
             try:
@@ -636,15 +647,26 @@ class Pysheet:
         except StopIteration:
             # print some status messages
             discarded = row - self.height()
+            if self.delimiter == '\t':
+                delim = 'tab'
+            else:
+                delim = self.delimiter
             if head_len == -1 and line != None:
-                sys.stderr.write("+++ %s: empty (wrong delimiter or too few columns)\n" % name)
+                sys.stderr.write("+++ %s: empty (wrong delimiter [%s]  or too few columns)\n" % \
+                        (name, delim))
             elif head_len == -1:
                 sys.stderr.write("+++ %s: empty\n" % name)
             elif discarded > 0:
-                sys.stderr.write("+++ %s: %d rows (%d discarded: duplicate ids), %d columns\n" % \
-                    (name, self.height(), discarded, head_len))
+                sys.stderr.write(("+++ %s: %d rows (%d discarded: duplicate ids), "
+                "%d columns [%s]\n") % \
+                    (name, self.height(), discarded, head_len, delim))
             else:
-                sys.stderr.write("+++ %s: %d rows, %d columns\n" % (name, self.height(), head_len))
+                if delim:
+                    sys.stderr.write("+++ %s: %d rows, %d columns [%s]\n" % \
+                            (name, self.height(), head_len, delim))
+                else:
+                    sys.stderr.write("+++ %s: %d rows, %d columns\n" % \
+                            (name, self.height(), head_len))
             # set proper idColumn if auto
             if self.idColumn == -1:
                 self.idColumn = head_len
@@ -1327,7 +1349,8 @@ class Pysheet:
             return "* module 'Texttable' is required to print stuff *\n"
         header = [[x.replace('__','') for x in self.getHeaders()]]
         ids = self.getIds()
-        ids.sort()
+        if self.rows[self.HEADERS_ID][self.idColumn] != self.AUTO_ID_HEADER:
+            ids.sort() # sort only if non-Auto IDs
         table = [self[i] for i in ids]
         table = header + table
         ttable = Texttable()#self.MAX_PRINT_WIDTH)
@@ -1344,9 +1367,9 @@ class PysheetException(Exception):
         if not fname:
             self.message = msg
         elif line and str(line).isdigit:
-            self.message = "Error %s in file %s at %d" % (msg, fname, line)
+            self.message = "!!! Pysheet Error in %s at %d: %s" % (fname, line, msg)
         else:
-            self.message = "Error %s in file %s" % (msg, fname)
+            self.message = "!!! Pysheet Error in %s: %s" % (fname, msg)
         super(PysheetException, self).__init__(self.message)
     def __str__(self):
         return repr(self.message)
