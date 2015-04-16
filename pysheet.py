@@ -7,7 +7,7 @@ Copyright (c) 2014, Stathis Kanterakis
 Last Update: April 2014
 """
 
-__version__ = "3.8"
+__version__ = "3.9"
 __author__  = "Stathis Kanterakis"
 __license__ = "LGPL"
 
@@ -22,6 +22,7 @@ from datetime import datetime
 from random import random
 from signal import signal, SIGPIPE, SIG_DFL
 from collections import OrderedDict
+from natsort import natsorted, ns
 
 # don't throw exceptions on closed pipes..
 signal(SIGPIPE,SIG_DFL)
@@ -82,8 +83,10 @@ Examples:
             'to auto-generate. Default is 0 (1st column) *')
     groupI.add_argument('--noHeader', '-n', type=yesNo, nargs='*', default=[False], \
             metavar='Y|N', help='Data file does not contain headers *')
-    groupI.add_argument('--skipCol', '-s', type=int, nargs='*', default=[0], \
+    groupI.add_argument('--skipRow', '-s', type=int, nargs='*', default=[0], \
             metavar='INT', help='Skip this number of rows from top of file *')
+    groupI.add_argument('--skipCol', '-S', type=int, nargs='*', default=[0], \
+            metavar='INT', help='Skip columns from the right of the file *')
     groupI.add_argument('--trans', '-t', type=yesNo, nargs='*', default=[False], \
             metavar='Y|N', help='Read data transposed *')
     groupI.add_argument('--rstack', '-rs', action='store_true', \
@@ -179,7 +182,7 @@ Examples:
         if args.data.count("stdin") > 1:
             logger.critical("!!! You can't have two inputs from stdin")
             sys.exit(1)
-        check_this = ["delim", "idCol", "skipCol", "noHeader", "trans"]
+        check_this = ["delim", "idCol", "skipRow", "skipCol", "noHeader", "trans"]
         for check_name in check_this:
             assert hasattr(args, check_name)
             check_values = getattr(args, check_name)
@@ -299,14 +302,15 @@ Examples:
     try:
         # now read the file
         mycsv = Pysheet(args.data[0], delimiter=args.delim[0], idColumn=args.idCol[0], \
-                skip=args.skipCol[0], noHeader=args.noHeader[0], rstack=args.rstack, \
+                skip=args.skipRow[0], skipColR=args.skipCol[0], noHeader=args.noHeader[0], rstack=args.rstack, \
                 cstack=args.cstack, trans=args.trans[0])
 
         # merge
         if numOfSheets > 1:
             for m in range(1, numOfSheets):
                 myothercsv = Pysheet(args.data[m], delimiter=args.delim[m], \
-                        idColumn=args.idCol[m], skip=args.skipCol[m], \
+                        idColumn=args.idCol[m], skip=args.skipRow[m], \
+                        skipColR=args.skipCol[m], \
                         noHeader=args.noHeader[m], rstack=args.rstack, \
                         cstack=args.cstack, trans=args.trans[m])
                 mycsv += myothercsv # __add__
@@ -456,7 +460,7 @@ class Pysheet:
     obj_id    = None  # an id to distinguish between objects
 
     def __init__(self, filename=None, delimiter=None, iterable=None, idColumn=None, skip=0, \
-            noHeader=False, rstack=False, cstack=False, trans=False):
+            skipColR=0, skipColL=0, noHeader=False, rstack=False, cstack=False, trans=False):
         """initializes the object and reads in a sheet from a file or an iterable.
         Optionally specify the column number that contains the unique IDs (starting from 0)"""
         # set IDs
@@ -484,14 +488,14 @@ class Pysheet:
         #self.rows = {}
         # and call the appropriate loader
         if filename and (os.path.exists(filename) or filename == 'stdin'):
-            self.loadFile(self.filename, self.idColumn, skip, noHeader, rstack, cstack, trans)
+            self.loadFile(self.filename, self.idColumn, skip, skipColR, skipColL, noHeader, rstack, cstack, trans)
         elif iterable:
-            self.load(iterable, self.idColumn, skip, noHeader, rstack, cstack, trans)
+            self.load(iterable, self.idColumn, skip, skipColR, skipColL, noHeader, rstack, cstack, trans)
         else:
             self.clear()
 
-    def loadFile(self, filename, idColumn=None, skip=0, noHeader=False, rstack=False, \
-            cstack=False, trans=False):
+    def loadFile(self, filename, idColumn=None, skip=0, skipColR=0, skipColL=0, \
+            noHeader=False, rstack=False, cstack=False, trans=False):
         """loads the sheet into a dictionary where the IDs in the first column are
         mapped to their rows. Optionally specify the column number that contains
         the unique IDs (starting from 0)"""
@@ -521,10 +525,10 @@ class Pysheet:
                 self.idColumn = int(idColumn)
             except ValueError as e:
                 self.idColumn = 0
-        self.load(reader, self.idColumn, skip, noHeader, rstack, cstack, trans)
+        self.load(reader, self.idColumn, skip, skipColR, skipColL, noHeader, rstack, cstack, trans)
 
-    def load(self, iterable, idColumn=None, skip=0, noHeader=False, rstack=False, \
-            cstack=False, trans=False):
+    def load(self, iterable, idColumn=None, skip=0, skipColR=0, skipColL=0, \
+            noHeader=False, rstack=False, cstack=False, trans=False):
         """creates a Pysheet object from an iterable.
         Optionally specify the column number that contains the unique IDs (starting from 0)"""
         name = os.path.basename(self.filename) if self.filename else self.obj_id
@@ -596,7 +600,7 @@ class Pysheet:
             line = None
             while True:
                 line = iterator.next()
-                line_len = len(line)
+                line_len = len(line) - skipColR
                 # skip blank, short lines and comments
                 if line_len < max(self.MIN_LINE_LEN, 1) or str(line[0]).startswith(self.COMMENT_CHAR):
                     continue
@@ -1287,7 +1291,7 @@ class Pysheet:
             if skipAutoIDColumn < 0:
                 skipAutoIDColumn = len(self) + skipAutoIDColumn
         else: # sort only if we have proper IDs
-            keys.sort()
+            keys = natsorted(keys, alg=ns.IGNORECASE)
         # set the header row on top first
         if saveHeaders:
             if skipAutoID:

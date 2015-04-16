@@ -307,10 +307,10 @@ Pasted below:
 
     usage: pysheet.py [-h] [--data [FILE [FILE ...]]] [--delim [CHAR [CHAR ...]]]
                       [--idCol [INT [INT ...]]] [--noHeader [Y|N [Y|N ...]]]
-                      [--skipCol [INT [INT ...]]] [--trans [Y|N [Y|N ...]]]
-                      [--rstack] [--cstack] [--out FILE] [--outDelim CHAR]
-                      [--outHeader [HEADER [HEADER ...]]] [--outNoHeader]
-                      [--outTrans]
+                      [--skipRow [INT [INT ...]]] [--skipCol [INT [INT ...]]]
+                      [--trans [Y|N [Y|N ...]]] [--rstack] [--cstack] [--out FILE]
+                      [--outDelim CHAR] [--outHeader [HEADER [HEADER ...]]]
+                      [--outNoHeader] [--outTrans]
                       [--write [ID HEADER VALUE [ID HEADER VALUE ...]] | --read
                       [ID HEADER [ID HEADER ...]] | --remove
                       [ID HEADER [ID HEADER ...]]] [--lockFile [LOCKFILE]]
@@ -339,8 +339,10 @@ Pasted below:
                             to auto-generate. Default is 0 (1st column) *
       --noHeader [Y|N [Y|N ...]], -n [Y|N [Y|N ...]]
                             Data file does not contain headers *
-      --skipCol [INT [INT ...]], -s [INT [INT ...]]
+      --skipRow [INT [INT ...]], -s [INT [INT ...]]
                             Skip this number of rows from top of file *
+      --skipCol [INT [INT ...]], -S [INT [INT ...]]
+                            Skip columns from the right of the file *
       --trans [Y|N [Y|N ...]], -t [Y|N [Y|N ...]]
                             Read data transposed *
       --rstack, -rs         Stack input files by rows (regardless of headers)
@@ -422,6 +424,10 @@ Generated using:
 Available at [Pysheet.html](http://htmlpreview.github.io/?https://github.com/isthisthat/Pysheet/blob/master/Pysheet.html)
 
 ## Changelog
+
+### v3.9
+* Sorts output in natural order ([natsort](https://pypi.python.org/pypi/natsort))
+* Added option --skipCol to skip columns from the right of files
 
 ### v3.8
 * Now detects input delimiter automatically

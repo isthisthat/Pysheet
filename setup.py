@@ -9,7 +9,7 @@ def read(*paths):
 
 setup(
     name='pysheet',
-    version='0.3.8',
+    version='0.3.9',
     description='Read, write and manipulate delimited text files',
     long_description=(read('README.rst')),
     url='https://github.com/isthisthat/Pysheet',
@@ -30,7 +30,7 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    install_requires=['Texttable'],
+    install_requires=['Texttable','natsort'],
     entry_points = {
         'console_scripts': [
             'pysheet = pysheet:main',
