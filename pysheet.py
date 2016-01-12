@@ -7,7 +7,7 @@ Copyright (c) 2014, Stathis Kanterakis
 Last Update: April 2014
 """
 
-__version__ = "3.9"
+__version__ = "3.10"
 __author__  = "Stathis Kanterakis"
 __license__ = "LGPL"
 
@@ -104,6 +104,8 @@ Examples:
     groupO.add_argument('--outNoHeader', '-N', action='store_true', \
             help="Don't output header row at the top")
     groupO.add_argument('--outTrans', '-T', action='store_true', help='Write output transposed')
+    groupO.add_argument('--outFname', '-OF', action='store_true', \
+            help='Add source filename as column')
 
     groupRW = parser.add_argument_group('Read/Write')
     groupRW_me = groupRW.add_mutually_exclusive_group()
@@ -153,22 +155,18 @@ Examples:
     else:
         args = parser.parse_args()
 
-    # setup the logger. we'll use the process ID for the name
+    # setup logging
     myPid = str(os.getpid())
-    logger = logging.getLogger(myPid)
     if args.verbose == 1:
-        logger.setLevel(logging.INFO)
+        logging.basicConfig(level="INFO", \
+                format='%(asctime)s - [%(name)s] - %(levelname)s - %(message)s')
     elif args.verbose > 1:
-        logger.setLevel(logging.DEBUG)
-    ch = logging.StreamHandler()
-    formatter = logging.Formatter('%(asctime)s [%(name)s] %(levelname)s: %(message)s', \
-            "%Y-%m-%d %H:%M:%S")
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
+        logging.basicConfig(level="DEBUG", \
+                format='%(asctime)s - [%(name)s] - %(levelname)s - %(message)s')
 
     # are there leftover parameters?
     if args.catchall:
-        logger.warn("!!! Unused parameters: %s" % flatten(args.catchall))
+        logging.warn("!!! Unused parameters: %s" % flatten(args.catchall))
 
     # check some boolean parameters for zero-length and assign value
     if args.noHeader == []:
@@ -180,7 +178,7 @@ Examples:
     numOfSheets = len(args.data)
     if numOfSheets > 0:
         if args.data.count("stdin") > 1:
-            logger.critical("!!! You can't have two inputs from stdin")
+            logging.critical("!!! You can't have two inputs from stdin")
             sys.exit(1)
         check_this = ["delim", "idCol", "skipRow", "skipCol", "noHeader", "trans"]
         for check_name in check_this:
@@ -188,20 +186,20 @@ Examples:
             check_values = getattr(args, check_name)
             if len(check_values) != numOfSheets:
                 if len(check_values) == 0:
-                    logger.critical("!!! No %s value given. Please provide up to %d" % \
+                    logging.critical("!!! No %s value given. Please provide up to %d" % \
                             (check_name, numOfSheets))
                     sys.exit(1)
                 elif len(check_values) == 1:
                     # make this the same for all data files
                     setattr(args, check_name, check_values * numOfSheets)
                 elif len(check_values) < numOfSheets:
-                    logger.warn("!!! Too few %s: %d. Using last %s (%s) for %d more data files" % \
+                    logging.warn("!!! Too few %s: %d. Using last %s (%s) for %d more data files" % \
                             (check_name, len(check_values), check_name, check_values[-1], \
                             numOfSheets - len(check_values)))
                     setattr(args, check_name, check_values + [check_values[-1]] * \
                             (numOfSheets - len(check_values)))
                 else:
-                    logger.warn("!!! Too many %s: %d. Required up to: %d. Disregarding the rest" % \
+                    logging.warn("!!! Too many %s: %d. Required up to: %d. Disregarding the rest" % \
                             (check_name, len(check_values), numOfSheets))
 
     # save once at the end if needed
@@ -211,14 +209,14 @@ Examples:
     # some IO info
     if args.data:
         if len(args.data) == 1:
-            logger.info("+++ Input file: %s" % args.data[0])
+            logging.info("+++ Input file: %s" % args.data[0])
         elif len(args.data) <= 10:
-            logger.info("+++ Input files (%d):\n%s" % (len(args.data), flatten(args.data, '\n')))
+            logging.info("+++ Input files (%d):\n%s" % (len(args.data), flatten(args.data, '\n')))
         elif len(args.data) > 10:
-            logger.info("+++ Input files (%d):\n%s..." % \
+            logging.info("+++ Input files (%d):\n%s..." % \
                     (len(args.data), flatten(args.data[:10], '\n')))
     if args.out:
-        logger.info("+++ Output file: %s" % args.out)
+        logging.info("+++ Output file: %s" % args.out)
 
     # LOCKING
     lock = False
@@ -233,10 +231,10 @@ Examples:
             if os.path.isfile(args.lockFile):
                 try:
                     if args.out and os.path.samefile(args.lockFile, args.out):
-                        logger.critical("!!! lockFile can't be the same as your output file!")
+                        logging.critical("!!! lockFile can't be the same as your output file!")
                         sys.exit(1)
                     if args.data and os.path.samefile(args.lockFile, args.data[0]):
-                        logger.critical("!!! lockFile can't be the same as your data file!")
+                        logging.critical("!!! lockFile can't be the same as your data file!")
                         sys.exit(1)
                 except OSError: # file was deleted in the meantime
                     pass
@@ -244,9 +242,9 @@ Examples:
             args.lockFile = writeable(args.lockFile) # check it is writeable
 
             lock = True
-            logger.info("+++ Lock file: %s" % args.lockFile)
+            logging.info("+++ Lock file: %s" % args.lockFile)
         else:
-            logger.warn("!!! Locking makes no sense unless you specify an output...")
+            logging.warn("!!! Locking makes no sense unless you specify an output...")
 
     # perform locking ?
     if lock:
@@ -259,7 +257,7 @@ Examples:
                 lockTime = datetime.fromtimestamp(os.path.getmtime(args.lockFile))
                 curTime = datetime.now()
                 if (curTime - lockTime).seconds > staleSec:
-                    logger.warn("!!! Removing stale lock: %s" % args.lockFile)
+                    logging.warn("!!! Removing stale lock: %s" % args.lockFile)
                     os.remove(args.lockFile)
             except OSError: # lock was already removed!
                 pass
@@ -278,11 +276,11 @@ Examples:
                 except IOError: # somebody removed the lock externally...
                     continue
         if counter > 1:
-            logger.debug(">>> Process slept for %d sec waiting for lock..." % counter)
+            logging.debug(">>> Process slept for %d sec waiting for lock..." % counter)
         # we've exceeded the timeoutSec and a process is still writing. now what?
         if counter >= timeoutSec:
             args.out += "." + myPid
-            logger.critical("""
+            logging.critical("""
 !!! LOCK TIMEOUT LIMIT EXCEEDED (%(lt)d seconds)
 !!! Changes (if any) to: %(ds)s
 !!! will be saved to: %(os)s
@@ -291,19 +289,23 @@ Examples:
         {"lt":timeoutSec, "ds":args.data[0], "os":args.out, "prog":sys.argv[0]})
             lock = False
         else:
-            logger.debug(">>> Grabbing lock...")
+            logging.debug(">>> Grabbing lock...")
 
     # check if output exists
     if args.out and args.out != 'stdout' and os.path.isfile(args.out) and not args.out in args.data:
-        logger.warn("!!! Output file already exists and will be overwritten: %s" % args.out)
+        logging.warn("!!! Output file already exists and will be overwritten: %s" % args.out)
     if args.out and not args.data:
-        logger.warn(">>> Creating a blank sheet in: %s" % args.out)
+        logging.warn(">>> Creating a blank sheet in: %s" % args.out)
 
     try:
         # now read the file
         mycsv = Pysheet(args.data[0], delimiter=args.delim[0], idColumn=args.idCol[0], \
                 skip=args.skipRow[0], skipColR=args.skipCol[0], noHeader=args.noHeader[0], rstack=args.rstack, \
                 cstack=args.cstack, trans=args.trans[0])
+
+        # add filename column?
+        if args.outFname:
+            mycsv.insertColumn("filename", init = mycsv.filename)
 
         # merge
         if numOfSheets > 1:
@@ -313,6 +315,9 @@ Examples:
                         skipColR=args.skipCol[m], \
                         noHeader=args.noHeader[m], rstack=args.rstack, \
                         cstack=args.cstack, trans=args.trans[m])
+                # add filename column?
+                if args.outFname:
+                    myothercsv.insertColumn("filename", init = myothercsv.filename)
                 mycsv += myothercsv # __add__
                 mycsv.contract(mode=args.mode) # merge same columns
 
@@ -333,9 +338,9 @@ Examples:
                     if ret:
                         sys.stdout.write(str(ret))
                         printed += 1
-                logger.info("=== Deleted %d cell%s.." % (printed, '' if printed==1 else 's'))
+                logging.info("=== Deleted %d cell%s.." % (printed, '' if printed==1 else 's'))
             except ValueError:
-                logger.critical("!!! Cell entries must be of the form 'ID header': %s" % \
+                logging.critical("!!! Cell entries must be of the form 'ID header': %s" % \
                         flatten(args.remove))
                 sys.exit(1)
 
@@ -350,9 +355,9 @@ Examples:
                         mycsv.addCell(cells[i][0], mode=args.mode)
                     else:
                         mycsv.addCell(cells[i][0],cells[i][1],cells[i][2], mode=args.mode)
-                logger.info("=== Added %d cell%s.." % (len(cells), '' if len(cells)==1 else 's'))
+                logging.info("=== Added %d cell%s.." % (len(cells), '' if len(cells)==1 else 's'))
             except ValueError:
-                logger.critical("!!! Cell entries must be of the form 'ID header value': %s" % \
+                logging.critical("!!! Cell entries must be of the form 'ID header value': %s" % \
                         flatten(args.write))
                 sys.exit(1)
 
@@ -360,11 +365,11 @@ Examples:
         # consolidate
         if args.clean:
             for c in args.clean:
-                logger.info(">>> Consolidating (clean): %s" % flatten(c) if c else "same headers")
+                logging.info(">>> Consolidating (clean): %s" % flatten(c) if c else "same headers")
             mycsv.consolidate(args.clean, cleanUp=True, mode=args.mode)
         if args.consolidate:
             for c in args.consolidate:
-                logger.info(">>> Consolidating: %s" % flatten(c) if c else "same headers")
+                logging.info(">>> Consolidating: %s" % flatten(c) if c else "same headers")
             mycsv.consolidate(args.consolidate, mode=args.mode)
 
 
@@ -388,7 +393,7 @@ Examples:
             retList = transpose(mycsv.getColumns(args.query))[0][1:]
             # first column is always the IDs; 1: skips the header row (now column)
             retList.sort()
-            logger.info("=== Query '%s' returned %d ID%s.." % (flatten(args.query), \
+            logging.info("=== Query '%s' returned %d ID%s.." % (flatten(args.query), \
                     len(retList), '' if len(retList)==1 else 's'))
             for item in retList:
                 sys.stdout.write(item+"\n")
@@ -407,30 +412,30 @@ Examples:
                     if ret:
                         sys.stdout.write(str(ret))
                         printed += 1
-                logger.info("=== Printed %d cell%s.." % (printed, '' if printed==1 else 's'))
+                logging.info("=== Printed %d cell%s.." % (printed, '' if printed==1 else 's'))
             except ValueError:
-                logger.critical("!!! Cell entries must be of the form 'ID header': %s" % \
+                logging.critical("!!! Cell entries must be of the form 'ID header': %s" % \
                         flatten(args.read))
                 sys.exit(1)
 
         # now save
         if save:
             if args.wait:
-                logger.debug(">>> Sleeping %d sec" % args.wait)
+                logging.debug(">>> Sleeping %d sec" % args.wait)
                 sleep(args.wait)
             mycsv.save(args.out, args.outDelim, not args.outNoHeader, args.outHeader, args.outTrans)
-            logger.info("=== Saved as: %s" % args.out)
+            logging.info("=== Saved as: %s" % args.out)
 
     # catch all exception thrown by Pysheet objects
     except PysheetException as e:
-        print e.message
+        logging.critical(e.message)
         sys.exit(3)
     except KeyboardInterrupt:
-        print "!!! Interrupted"
+        logging.critical("!!! Interrupted")
         sys.exit(1)
 
     if lock:
-        logger.debug(">>> Releasing lock...")
+        logging.debug(">>> Releasing lock...")
         os.remove(args.lockFile)
 
 
@@ -793,8 +798,9 @@ class Pysheet:
                 del self[cleankey]
         return ret
 
-    def insertColumn(self, header, index=None):
-        """inserts a blank column in the dictionary at index (number)"""
+    def insertColumn(self, header, index=None, init=None):
+        """inserts a blank column in the dictionary at index (default=1)
+        initializes with self.BLANK_VALUE"""
         header = str(header)
         if not header.lower().replace('__','') in [l.lower().replace('__','') \
                 for l in self.getHeaders()]:
@@ -813,7 +819,7 @@ class Pysheet:
                         header = '__'+header.strip()
                     self[k].insert(index,header)
                 else:
-                    self[k].insert(index,self.BLANK_VALUE)
+                    self[k].insert(index,self.BLANK_VALUE if not init else init)
             # did we insert before the idColumn?
             if index <= self.idColumn:
                 self.idColumn += 1
@@ -1416,7 +1422,7 @@ def flatten(l, delim=" "):
 
 def printStackTrace():
     """prints an exception trace. To be used in an Except block"""
-    traceback.print_exc(file=sys.stdout)
+    traceback.print_exc(file=sys.stderr)
 
 def isList(x):
     """returns True if x is some kind of a list"""

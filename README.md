@@ -310,7 +310,7 @@ Pasted below:
                       [--skipRow [INT [INT ...]]] [--skipCol [INT [INT ...]]]
                       [--trans [Y|N [Y|N ...]]] [--rstack] [--cstack] [--out FILE]
                       [--outDelim CHAR] [--outHeader [HEADER [HEADER ...]]]
-                      [--outNoHeader] [--outTrans]
+                      [--outNoHeader] [--outTrans] [--outFname]
                       [--write [ID HEADER VALUE [ID HEADER VALUE ...]] | --read
                       [ID HEADER [ID HEADER ...]] | --remove
                       [ID HEADER [ID HEADER ...]]] [--lockFile [LOCKFILE]]
@@ -356,6 +356,7 @@ Pasted below:
                             Replace output header with this list
       --outNoHeader, -N     Don't output header row at the top
       --outTrans, -T        Write output transposed
+      --outFname, -OF       Add source filename as column
     
     Read/Write:
       --write [ID HEADER VALUE [ID HEADER VALUE ...]], -w [ID HEADER VALUE [ID HEADER VALUE ...]]
@@ -424,6 +425,9 @@ Generated using:
 Available at [Pysheet.html](http://htmlpreview.github.io/?https://github.com/isthisthat/Pysheet/blob/master/Pysheet.html)
 
 ## Changelog
+
+### v3.10
+* Added option --outFname to output filename as column. Useful when merging files
 
 ### v3.9
 * Sorts output in natural order ([natsort](https://pypi.python.org/pypi/natsort))
