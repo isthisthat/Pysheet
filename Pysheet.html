@@ -62,11 +62,19 @@ blanks=False&nbsp;will&nbsp;remove&nbsp;rows&nbsp;that&nbsp;contain&nbsp;*any*&n
 exclude=True&nbsp;will&nbsp;skip&nbsp;rows&nbsp;that&nbsp;have&nbsp;a&nbsp;value&nbsp;in&nbsp;the&nbsp;__exclude__&nbsp;column<br>
 Default&nbsp;is&nbsp;return&nbsp;all&nbsp;columns</tt></dd></dl>
 
-<dl><dt><a name="Pysheet-getHeaders"><strong>getHeaders</strong></a>(self)</dt><dd><tt>returns&nbsp;the&nbsp;headers&nbsp;of&nbsp;the&nbsp;columns&nbsp;in&nbsp;the&nbsp;dictionary.<br>
-If&nbsp;lockedHeaders=False,&nbsp;skips&nbsp;the&nbsp;headers&nbsp;starting&nbsp;with&nbsp;'__'</tt></dd></dl>
+<dl><dt><a name="Pysheet-getColumnsContaining"><strong>getColumnsContaining</strong></a>(self, items)</dt><dd><tt>returns&nbsp;indices&nbsp;of&nbsp;columns&nbsp;contains&nbsp;anything&nbsp;in&nbsp;list&nbsp;of&nbsp;items</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-getColumnsWithBlanks"><strong>getColumnsWithBlanks</strong></a>(self)</dt><dd><tt>returns&nbsp;indices&nbsp;of&nbsp;columns&nbsp;containing&nbsp;blank&nbsp;values</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-getHeaders"><strong>getHeaders</strong></a>(self, idCol<font color="#909090">=True</font>, index<font color="#909090">=False</font>)</dt><dd><tt>returns&nbsp;the&nbsp;headers&nbsp;of&nbsp;the&nbsp;columns&nbsp;in&nbsp;the&nbsp;dictionary<br>
+(indices&nbsp;instead&nbsp;if&nbsp;index=True)</tt></dd></dl>
 
 <dl><dt><a name="Pysheet-getIds"><strong>getIds</strong></a>(self)</dt><dd><tt>returns&nbsp;all&nbsp;keys&nbsp;of&nbsp;the&nbsp;dictionary,&nbsp;except&nbsp;the&nbsp;header<br>
 key&nbsp;and&nbsp;any&nbsp;IDs&nbsp;starting&nbsp;with&nbsp;'__'</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-getRowsContaining"><strong>getRowsContaining</strong></a>(self, items)</dt><dd><tt>returns&nbsp;IDs&nbsp;of&nbsp;columns&nbsp;containing&nbsp;anything&nbsp;in&nbsp;list&nbsp;of&nbsp;items</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-getRowsWithBlanks"><strong>getRowsWithBlanks</strong></a>(self)</dt><dd><tt>returns&nbsp;IDs&nbsp;of&nbsp;rows&nbsp;containing&nbsp;blank&nbsp;values</tt></dd></dl>
 
 <dl><dt><a name="Pysheet-grab"><strong>grab</strong></a>(self, key<font color="#909090">=None</font>, header<font color="#909090">=None</font>, level<font color="#909090">=None</font>)</dt><dd><tt>grabs&nbsp;a&nbsp;cell&nbsp;(key&nbsp;+&nbsp;header),&nbsp;a&nbsp;whole&nbsp;row&nbsp;(just&nbsp;key),&nbsp;or&nbsp;all&nbsp;keys&nbsp;that<br>
 correspond&nbsp;to&nbsp;'level'&nbsp;(header&nbsp;+&nbsp;level)&nbsp;from&nbsp;the&nbsp;dictionary.&nbsp;level='ALL'&nbsp;is&nbsp;valid</tt></dd></dl>
@@ -116,7 +124,9 @@ Default&nbsp;is&nbsp;return&nbsp;a&nbsp;list&nbsp;of&nbsp;a&nbsp;list&nbsp;of&nb
 
 <dl><dt><a name="Pysheet-removeCell"><strong>removeCell</strong></a>(self, key, header<font color="#909090">=None</font>)</dt><dd><tt>deletes&nbsp;a&nbsp;cell&nbsp;or&nbsp;a&nbsp;row&nbsp;from&nbsp;the&nbsp;dictionary</tt></dd></dl>
 
-<dl><dt><a name="Pysheet-removeColumns"><strong>removeColumns</strong></a>(self, cols)</dt><dd><tt>removes&nbsp;columns&nbsp;from&nbsp;the&nbsp;dictionary&nbsp;by&nbsp;index,&nbsp;starting&nbsp;from&nbsp;0&nbsp;(not&nbsp;by&nbsp;header&nbsp;name)</tt></dd></dl>
+<dl><dt><a name="Pysheet-removeColumns"><strong>removeColumns</strong></a>(self, cols)</dt><dd><tt>removes&nbsp;columns&nbsp;from&nbsp;the&nbsp;dictionary&nbsp;by&nbsp;index&nbsp;(not&nbsp;by&nbsp;header&nbsp;name),&nbsp;starting&nbsp;from&nbsp;0</tt></dd></dl>
+
+<dl><dt><a name="Pysheet-removeMissing"><strong>removeMissing</strong></a>(self, rows<font color="#909090">=False</font>)</dt><dd><tt>removes&nbsp;rows&nbsp;or&nbsp;columns&nbsp;(default)&nbsp;with&nbsp;empty&nbsp;fields&nbsp;and&nbsp;returns&nbsp;what&nbsp;was&nbsp;removed</tt></dd></dl>
 
 <dl><dt><a name="Pysheet-rename"><strong>rename</strong></a>(self, newName, header<font color="#909090">=None</font>, key<font color="#909090">=None</font>)</dt><dd><tt>renames&nbsp;a&nbsp;column&nbsp;header,&nbsp;or&nbsp;a&nbsp;row&nbsp;key&nbsp;(not&nbsp;both)</tt></dd></dl>
 
@@ -153,8 +163,6 @@ Data and other attributes defined here:<br>
 <dl><dt><strong>idColumn</strong> = 0</dl>
 
 <dl><dt><strong>obj_id</strong> = None</dl>
-
-<dl><dt><strong>rows</strong> = None</dl>
 
 </td></tr></table>
 </body></html>

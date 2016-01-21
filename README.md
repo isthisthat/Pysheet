@@ -313,7 +313,9 @@ Pasted below:
                       [--outNoHeader] [--outTrans] [--outFname]
                       [--write [ID HEADER VALUE [ID HEADER VALUE ...]] | --read
                       [ID HEADER [ID HEADER ...]] | --remove
-                      [ID HEADER [ID HEADER ...]]] [--lockFile [LOCKFILE]]
+                      [ID HEADER [ID HEADER ...]]]
+                      [--removeMissingRows | --removeMissingColumns]
+                      [--lockFile [LOCKFILE]]
                       [--consolidate [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]]
                       [--clean [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]]
                       [--mode [append|overwrite|add]]
@@ -358,13 +360,17 @@ Pasted below:
       --outTrans, -T        Write output transposed
       --outFname, -OF       Add source filename as column
     
-    Read/Write:
+    Add/Remove:
       --write [ID HEADER VALUE [ID HEADER VALUE ...]], -w [ID HEADER VALUE [ID HEADER VALUE ...]]
                             Write new cells *
       --read [ID HEADER [ID HEADER ...]], -r [ID HEADER [ID HEADER ...]]
                             Print value of cells *
       --remove [ID HEADER [ID HEADER ...]], -R [ID HEADER [ID HEADER ...]]
                             Remove cells *
+      --removeMissingRows, -RR
+                            Remove rows with missing values
+      --removeMissingColumns, -RC
+                            Remove columns with missing values
       --lockFile [LOCKFILE], -L [LOCKFILE]
                             Read/write lock to prevent parallel jobs from
                             overwriting the data. Use in asynchronous loops. You
@@ -425,6 +431,10 @@ Generated using:
 Available at [Pysheet.html](http://htmlpreview.github.io/?https://github.com/isthisthat/Pysheet/blob/master/Pysheet.html)
 
 ## Changelog
+
+### v3.11
+* Added options --removeMissingRows and --removeMissingColumns to remove rows/columns containing blank values
+* Now accepts blank headers and replaces them with V00i where i is the index of the blank header
 
 ### v3.10
 * Added option --outFname to output filename as column. Useful when merging files

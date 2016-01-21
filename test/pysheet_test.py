@@ -54,6 +54,8 @@ class TestFunctions(unittest.TestCase):
     self.assertTrue(p.containsColumn("id"))
     self.assertTrue(p.containsColumn("h3"))
     self.assertEqual(p.getHeaders(),['ID', 'H1', 'H2', 'H3'])
+    p.removeMissing(rows=False)
+    self.assertEqual(p.getHeaders(),['ID'])
 
   def test_operations(self):
     p = Pysheet(iterable=self.table)
@@ -87,7 +89,7 @@ class TestFunctions(unittest.TestCase):
     test_lock = os.path.join(test_dir, "test.csv.lock")
 
     out = [\
-'Human Gene |  ZFIN ID   |    ZFIN    |   Entrez   |   Entrez   |            \n',
+'Human Gene |  ZFIN ID   |    ZFIN    |   Entrez   |   Entrez   |    V005    \n',
 '  Symbol   |            |   Symbol   | Zebrafish  | Human Gene |            \n',
 '           |            |            |  Gene ID   |     ID     |            \n',
 '===========+============+============+============+============+===========\n',
