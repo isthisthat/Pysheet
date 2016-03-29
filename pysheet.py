@@ -7,7 +7,7 @@ Copyright (c) 2014, Stathis Kanterakis
 Last Update: April 2014
 """
 
-__version__ = "3.11"
+__version__ = "3.12"
 __author__  = "Stathis Kanterakis"
 __license__ = "LGPL"
 
@@ -391,7 +391,7 @@ Examples:
             if not args.columns == []:
                 # if we got some column spec, extract columns (else print all)
                 cols = Pysheet()
-                cols.obj_id = "output" + cols.obj_id
+                cols._objid = "output" + cols._objid
                 cols.load(mycsv.getColumns(args.columns, blanks=True, exclude=False))
                 mycsv = cols # make this the current spreadsheet
             if not args.out and not args.query and not args.read and not args.printHeaders:
@@ -472,22 +472,22 @@ class Pysheet:
     # parameters
     filename  = None # the input/output path and name
     delimiter = None # the sheet delimiter
-    _rows      = None # the dictionary that maps an ID to its row
+    _rows     = None # the dictionary that maps an ID to its row
     idColumn  = 0    # the column index that contains the IDs
-    obj_id    = None  # an id to distinguish between objects
+    _objid    = None # an id to distinguish between objects
 
     def __init__(self, filename=None, delimiter=None, iterable=None, idColumn=None, skip=0, \
             skipColR=0, skipColL=0, noHeader=False, rstack=False, cstack=False, trans=False):
         """initializes the object and reads in a sheet from a file or an iterable.
         Optionally specify the column number that contains the unique IDs (starting from 0)"""
         # set IDs
-        if not self.obj_id:
-            self.obj_id = "_" + randomId() #str(id(self))
-            #self.HEADERS_ID = self.HEADERS_ID + self.obj_id
-            #self.AUTO_ID_HEADER = self.AUTO_ID_HEADER + self.obj_id
-            #self.FLAG_VALUE = self.FLAG_VALUE + self.obj_id
+        if not self._objid:
+            self._objid = "_" + randomId() #str(id(self))
+            #self.HEADERS_ID = self.HEADERS_ID + self._objid
+            #self.AUTO_ID_HEADER = self.AUTO_ID_HEADER + self._objid
+            #self.FLAG_VALUE = self.FLAG_VALUE + self._objid
         else:
-            logging.warn("!!! Re-initialising %s\n" % self.obj_id)
+            logging.warn("!!! Re-initialising %s\n" % self._objid)
         # set filename
         self.filename = filename
         # set ID column
@@ -548,7 +548,7 @@ class Pysheet:
             noHeader=False, rstack=False, cstack=False, trans=False):
         """creates a Pysheet object from an iterable.
         Optionally specify the column number that contains the unique IDs (starting from 0)"""
-        name = os.path.basename(self.filename) if self.filename else self.obj_id
+        name = os.path.basename(self.filename) if self.filename else self._objid
         # if empty set headers and return
         if not iterable:
             logging.warn("!!! Null iterbale. Clearing object %s\n" % name)
@@ -633,7 +633,7 @@ class Pysheet:
                             self._rows[self.HEADERS_ID] = ["C%03d" % (col+1) \
                                     for col in range(head_len)]
                         else: # else add the object's unique id
-                            self._rows[self.HEADERS_ID] = ["C%03d%s" % (col+1, self.obj_id) \
+                            self._rows[self.HEADERS_ID] = ["C%03d%s" % (col+1, self._objid) \
                                     for col in range(head_len)]
                         row+=1 # so that this line gets added below
                     else:
@@ -661,7 +661,7 @@ class Pysheet:
                         if cstack:
                             thisline.append("R%05d" % row)
                         else:
-                            thisline.append("R%05d%s" % (row, self.obj_id))
+                            thisline.append("R%05d%s" % (row, self._objid))
                         line_len += 1
                     self._rows[clean(sanitize(thisline[self.idColumn]))] = thisline
                 # move to next row
@@ -735,15 +735,33 @@ class Pysheet:
     def __getitem__(self, key, default=None):
         """gets the row of an ID from the dictionary"""
         return self._rows.get(clean(sanitize(key)), default)
-    def get(self, key, default=None):
+    def getRow(self, key, default=None):
         """gets the row of an ID from the dictionary"""
         return self.__getitem__(key, default)
+    def getCell(self, key, header):
+        """gets a cell by key and header name"""
+        return self[key][self.headerIndex(header)]
 
     def __setitem__(self, key, row):
         """changes the row of an ID in the dictionary"""
+        if key != self.HEADERS_ID and row[self.idColumn] and \
+                clean(row[self.idColumn]) != clean(key):
+                    raise PysheetException("Key inconsistency: %s %s" % \
+                            (clean(row[self.idColumn]), clean(key))) # keep key consistency
         self._rows[clean(key)] = row
-    def set(self, key, row):
+    def setRow(self, key, row):
         """changes the row of an ID in the dictionary"""
+        self[key] = row
+    def setCell(self, key, header, value):
+        """sets a cell value by key and header name
+        updates dictionary keys as necessary"""
+        hi = self.headerIndex(header)
+        row = self[key][:]
+        row[hi] = value
+        if hi == self.idColumn: # remove old key
+            oldkey = self[key][hi]
+            del self[oldkey]
+            key = value
         self[key] = row
 
     def __delitem__(self, key):
@@ -878,7 +896,7 @@ class Pysheet:
         except:
             try:
                 other = Pysheet(iterable=other) # if we have an iterable, make a Pysheet on the fly
-                logging.info("+++ Cast pysheet %s\n" % other.obj_id)
+                logging.info("+++ Cast pysheet %s\n" % other._objid)
             except Exception:
                 printStackTrace()
                 raise PysheetException("I don't know how to add this. Please use a Pysheet")

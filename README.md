@@ -6,12 +6,12 @@ Pysheet is your best companion for data management. It can read and write to a d
 ## Quick Start
 1. Install using pip:
 
-    pip install pysheet
+`pip install pysheet`
 
 3. Try the following commands:
 
-    pysheet -o helloworld.csv --write 1 A Pysheet 2 B your 3 C best 4 D companion 5 E to 6 F Excel -v
-    pysheet -d helloworld.csv --columns 4 2 1 3 5 6
+`pysheet -o helloworld.csv --write 1 A Pysheet 2 B your 3 C best 4 D companion 5 E to 6 F Excel -v`
+`pysheet -d helloworld.csv --columns 4 2 1 3 5 6`
 
 Output:
 
@@ -431,6 +431,9 @@ Generated using:
 Available at [Pysheet.html](http://htmlpreview.github.io/?https://github.com/isthisthat/Pysheet/blob/master/Pysheet.html)
 
 ## Changelog
+
+### v3.12
+* Added setCell function that correctly updates dictionary keys if updating the ID column
 
 ### v3.11
 * Added options --removeMissingRows and --removeMissingColumns to remove rows/columns containing blank values

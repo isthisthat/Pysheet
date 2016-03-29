@@ -17,8 +17,8 @@ class TestFunctions(unittest.TestCase):
 
   def test_load(self):
     p = Pysheet(iterable=self.table)
-    self.assertEqual(sorted(p.get("1")), sorted(self.table[1]))
-    self.assertEqual(p.get(3), None)
+    self.assertEqual(sorted(p.getRow("1")), sorted(self.table[1]))
+    self.assertEqual(p.getRow(3), None)
     self.assertEqual(sorted(p.getIds()), sorted([i[0] for i in self.table][1:]))
     self.assertEqual(p.grab(key=2,header="h3"), "cc")
     self.assertEqual(p.grab(key=2,header="h4"), None)
@@ -31,6 +31,8 @@ class TestFunctions(unittest.TestCase):
     self.assertFalse(p.isEmpty())
     self.assertEqual(p[1],[1, 'a', 'b', 'c'])
     self.assertEqual(p[3],None)
+    p.setCell("1",'ID',3)
+    self.assertEqual(p[3],[3, 'a', 'b', 'c'])
     p = Pysheet(iterable=self.table, trans=True)
     self.assertEqual(p.getHeaders(),['ID', '1', '2', '99', '88'])
     p = Pysheet(iterable=self.table, trans=True, cstack=True) + \
