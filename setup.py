@@ -18,7 +18,6 @@ setup(
     license='LGPL',
     author='Stathis Kanterakis',
     author_email='me@stathiskanterakis.com',
-    include_package_data=True,
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
