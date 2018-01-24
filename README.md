@@ -362,7 +362,7 @@ Pasted below:
     
     Add/Remove:
       --write [ID HEADER VALUE [ID HEADER VALUE ...]], -w [ID HEADER VALUE [ID HEADER VALUE ...]]
-                            Write new cells *
+                            Write new cells. Can use NONE for ID or HEADER *
       --read [ID HEADER [ID HEADER ...]], -r [ID HEADER [ID HEADER ...]]
                             Print value of cells *
       --remove [ID HEADER [ID HEADER ...]], -R [ID HEADER [ID HEADER ...]]
@@ -383,9 +383,10 @@ Pasted below:
                             Consolidate and remove consolitated columns *
       --mode [append|overwrite|add], -e [append|overwrite|add]
                             Consolidation mode for cells with same header and row
-                            id. One of: append (old_value;new_value), overwrite or
-                            add (numerical addition). Default is 'smart_append'
-                            (append only if value is not already present)
+                            id. One of: append (old_value;new_value), overwrite,
+                            or add (numerical addition). Default is
+                            'smart_append-;' (append only if value is not already
+                            present, use ';' as append delimiter)
     
     Query:
       --columns [COLUMNS [COLUMNS ...]], -k [COLUMNS [COLUMNS ...]]
@@ -431,6 +432,10 @@ Generated using:
 Available at [Pysheet.html](http://htmlpreview.github.io/?https://github.com/isthisthat/Pysheet/blob/master/Pysheet.html)
 
 ## Changelog
+
+### v3.13
+* Added NONE as a keyword for adding cells
+* Added ability to specify collapse string in mode
 
 ### v3.12
 * Added setCell function that correctly updates dictionary keys if updating the ID column

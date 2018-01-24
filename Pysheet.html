@@ -29,7 +29,7 @@ Optionally&nbsp;specify&nbsp;the&nbsp;column&nbsp;number&nbsp;that&nbsp;contains
 
 <dl><dt><a name="Pysheet-__str__"><strong>__str__</strong></a>(self)</dt><dd><tt>returns&nbsp;a&nbsp;string&nbsp;representation&nbsp;of&nbsp;this&nbsp;object</tt></dd></dl>
 
-<dl><dt><a name="Pysheet-addCell"><strong>addCell</strong></a>(self, key, header<font color="#909090">=None</font>, value<font color="#909090">=None</font>, mode<font color="#909090">='overwrite'</font>)</dt><dd><tt>adds&nbsp;a&nbsp;single&nbsp;cell&nbsp;in&nbsp;the&nbsp;dictionary.&nbsp;mode&nbsp;can&nbsp;be&nbsp;'smart_append'<br>
+<dl><dt><a name="Pysheet-addCell"><strong>addCell</strong></a>(self, key, header<font color="#909090">=None</font>, value<font color="#909090">=None</font>, mode<font color="#909090">='overwrite'</font>, collapse<font color="#909090">=';'</font>)</dt><dd><tt>adds&nbsp;a&nbsp;single&nbsp;cell&nbsp;in&nbsp;the&nbsp;dictionary.&nbsp;mode&nbsp;can&nbsp;be&nbsp;'smart_append'<br>
 (adds&nbsp;a&nbsp;value&nbsp;if&nbsp;not&nbsp;already&nbsp;present),&nbsp;'append',&nbsp;'overwrite'&nbsp;and<br>
 'add'&nbsp;(performs&nbsp;plus&nbsp;operation&nbsp;if&nbsp;values&nbsp;are&nbsp;numeric)</tt></dd></dl>
 
@@ -86,7 +86,7 @@ correspond&nbsp;to&nbsp;'level'&nbsp;(header&nbsp;+&nbsp;level)&nbsp;from&nbsp;t
 <dl><dt><a name="Pysheet-height"><strong>height</strong></a>(self)</dt><dd><tt>returns&nbsp;the&nbsp;number&nbsp;of&nbsp;rows&nbsp;in&nbsp;the&nbsp;dictionary</tt></dd></dl>
 
 <dl><dt><a name="Pysheet-insertColumn"><strong>insertColumn</strong></a>(self, header, index<font color="#909090">=None</font>, init<font color="#909090">=None</font>)</dt><dd><tt>inserts&nbsp;a&nbsp;blank&nbsp;column&nbsp;in&nbsp;the&nbsp;dictionary&nbsp;at&nbsp;index&nbsp;(default=1)<br>
-initializes&nbsp;with&nbsp;self.<strong>BLANK_VALUE</strong></tt></dd></dl>
+initializes&nbsp;with&nbsp;self.<strong>_BLANK_VALUE</strong></tt></dd></dl>
 
 <dl><dt><a name="Pysheet-isBlank"><strong>isBlank</strong></a>(self, cell)</dt><dd><tt>returns&nbsp;True&nbsp;if&nbsp;cell&nbsp;is&nbsp;considered&nbsp;blank</tt></dd></dl>
 
@@ -143,24 +143,6 @@ updates&nbsp;dictionary&nbsp;keys&nbsp;as&nbsp;necessary</tt></dd></dl>
 
 <hr>
 Data and other attributes defined here:<br>
-<dl><dt><strong>APPEND_CHAR</strong> = ';'</dl>
-
-<dl><dt><strong>AUTO_ID_HEADER</strong> = '__AutoID__'</dl>
-
-<dl><dt><strong>BLANK_VALUE</strong> = ''</dl>
-
-<dl><dt><strong>COMMENT_CHAR</strong> = '#'</dl>
-
-<dl><dt><strong>EXCLUDE_HEADER</strong> = '__exclude__'</dl>
-
-<dl><dt><strong>FLAG_VALUE</strong> = '__flag__'</dl>
-
-<dl><dt><strong>HEADERS_ID</strong> = '__header__'</dl>
-
-<dl><dt><strong>MAX_PRINT_WIDTH</strong> = 200</dl>
-
-<dl><dt><strong>MIN_LINE_LEN</strong> = 2</dl>
-
 <dl><dt><strong>delimiter</strong> = None</dl>
 
 <dl><dt><strong>filename</strong> = None</dl>
