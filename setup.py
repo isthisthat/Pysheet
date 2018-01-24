@@ -9,14 +9,15 @@ def read(*paths):
 
 setup(
     name='pysheet',
+    packages=['pysheet'],
     version='0.3.13',
     description='Read, write and manipulate delimited text files',
     long_description=(read('README.rst')),
     url='https://github.com/isthisthat/Pysheet',
+    download_url='https://github.com/isthisthat/Pysheet/archive/0.3.13.tar.gz',
     license='LGPL',
     author='Stathis Kanterakis',
     author_email='me@stathiskanterakis.com',
-    py_modules=['pysheet'],
     include_package_data=True,
     classifiers=[
         'Development Status :: 5 - Production/Stable',
@@ -30,10 +31,10 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    install_requires=['Texttable','natsort'],
+    install_requires=['natsort'],
     entry_points = {
         'console_scripts': [
-            'pysheet = pysheet:main',
-        ],
+            'pysheet = pysheet.pysheet:main'
+        ]
     }
 )
