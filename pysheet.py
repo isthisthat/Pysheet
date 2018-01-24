@@ -110,7 +110,7 @@ Examples:
     groupRW_me = groupRW.add_mutually_exclusive_group()
     groupRW_me2 = groupRW.add_mutually_exclusive_group()
     groupRW_me.add_argument('--write', '-w', nargs='*', metavar="ID HEADER VALUE",
-            help="Write new cells *")
+            help="Write new cells. Can use NONE for ID or HEADER *")
     groupRW_me.add_argument('--read', '-r', nargs='*', metavar="ID HEADER",
             help="Print value of cells *")
     groupRW_me.add_argument('--remove', '-R', nargs='*', metavar="ID HEADER",
@@ -130,11 +130,11 @@ Examples:
     groupC.add_argument('--clean', '-C', nargs='*', action='append',
             metavar="HEADER KEYWORD1 KEYWORD2 etc", help="Consolidate and remove consolitated columns *")
     groupC.add_argument('--mode', '-e', nargs='?',
-            choices=['append','overwrite','add','smart_append'], default='smart_append',
+            type=collapseMode, default=['smart_append', ';'],
             metavar="append|overwrite|add", help="Consolidation mode for cells with same header "
-            "and row id. One of: append (old_value;new_value), overwrite or add "
-            "(numerical addition). Default is 'smart_append' (append only if value is "
-            "not already present)")
+            "and row id. One of: append (old_value;new_value), overwrite, or add "
+            "(numerical addition). Default is 'smart_append-;' (append only if value is "
+            "not already present, use ';' as append delimiter)")
 
     groupQ = parser.add_argument_group('Query')
     groupQ.add_argument('--columns', '-k', nargs='*',
@@ -177,6 +177,10 @@ Examples:
         args.noHeader = [True]
     if args.trans == []:
         args.trans = [True]
+
+    # set collapse delim
+    collapse = args.mode[1]
+    args.mode = args.mode[0]
 
     # check lists of items for consistency
     numOfSheets = len(args.data)
@@ -306,6 +310,7 @@ Examples:
         mycsv = Pysheet(args.data[0], delimiter=args.delim[0], idColumn=args.idCol[0],
                 skip=args.skipRow[0], skipColR=args.skipCol[0], noHeader=args.noHeader[0],
                 rstack=args.rstack, cstack=args.cstack, trans=args.trans[0])
+        mycsv._COLLAPSE = collapse
 
         # add filename column?
         if args.outFname:
@@ -319,6 +324,7 @@ Examples:
                         skipColR=args.skipCol[m],
                         noHeader=args.noHeader[m], rstack=args.rstack,
                         cstack=args.cstack, trans=args.trans[m])
+                myothercsv._COLLAPSE = collapse
                 # add filename column?
                 if args.outFname:
                     myothercsv.insertColumn("filename", init = myothercsv.filename)
@@ -354,12 +360,16 @@ Examples:
             try:
                 cells = reshape(args.write,(len(args.write)/3,3))
                 #save = True
+                ncells = len(cells)
                 for i in range(len(cells)):
-                    if cells[i][1].lower() == "none":
+                    if cells[i][0].lower() == "none":
+                        mycsv.insertColumn(cells[i][1], init=cells[i][2])
+                        ncells = ncells - 2 + mycsv.height()
+                    elif cells[i][1].lower() == "none":
                         mycsv.addCell(cells[i][0], mode=args.mode)
                     else:
                         mycsv.addCell(cells[i][0],cells[i][1],cells[i][2], mode=args.mode)
-                logging.info("=== Added %d cell%s.." % (len(cells), '' if len(cells)==1 else 's'))
+                logging.info("=== Added %d cell%s.." % (ncells, '' if ncells==1 else 's'))
             except ValueError:
                 logging.critical("!!! Cell entries must be of the form 'ID header value': %s" % flatten(
                     args.write))
@@ -458,15 +468,15 @@ Examples:
 class Pysheet:
     """Pysheet - A library to read, write and manipulate spreadsheets"""
     # globals
-    HEADERS_ID      = "__header__" # denotes the row which contains the header labels
-    EXCLUDE_HEADER  = "__exclude__" # special column header used to flag a row for exclusion
-    AUTO_ID_HEADER  = "__AutoID__" # header used for auto ids when negative idColumn specified
-    MIN_LINE_LEN    = 2             # minimum length of input line array to treat as valid
-    COMMENT_CHAR    = '#'           # lines starting with this character will be excluded
-    APPEND_CHAR     = ';'           # character used to merge strings in consolidated columns
-    BLANK_VALUE     = ''            # default value used for empty cells
-    FLAG_VALUE      = '__flag__'    # flags a row for filtering
-    MAX_PRINT_WIDTH = 200           # the max width of a printout on the command line
+    _HEADERS_ID      = "__header__" # denotes the row which contains the header labels
+    _EXCLUDE_HEADER  = "__exclude__" # special column header used to flag a row for exclusion
+    _AUTO_ID_HEADER  = "__AutoID__" # header used for auto ids when negative idColumn specified
+    _MIN_LINE_LEN    = 2             # minimum length of input line array to treat as valid
+    _COMMENT_CHAR    = '#'           # lines starting with this character will be excluded
+    _COLLAPSE        = ';'           # string used to merge values in consolidated columns
+    _BLANK_VALUE     = ''            # default value used for empty cells
+    _FLAG_VALUE      = '__flag__'    # flags a row for filtering
+    _MAX_PRINT_WIDTH = 200           # the max width of a printout on the command line
 
     # parameters
     filename  = None # the input/output path and name
@@ -482,9 +492,9 @@ class Pysheet:
         # set IDs
         if not self._objid:
             self._objid = "_" + randomId() #str(id(self))
-            #self.HEADERS_ID = self.HEADERS_ID + self._objid
-            #self.AUTO_ID_HEADER = self.AUTO_ID_HEADER + self._objid
-            #self.FLAG_VALUE = self.FLAG_VALUE + self._objid
+            #self._HEADERS_ID = self._HEADERS_ID + self._objid
+            #self._AUTO_ID_HEADER = self._AUTO_ID_HEADER + self._objid
+            #self._FLAG_VALUE = self._FLAG_VALUE + self._objid
         else:
             logging.warn("!!! Re-initialising %s\n" % self._objid)
         # set filename
@@ -577,7 +587,7 @@ class Pysheet:
                 self.idColumn = int(idColumn)
                 if self.idColumn < 0: # auto-generate ids!
                     self.idColumn = -1
-                    self.MIN_LINE_LEN -= 1 # accept smaller lines
+                    self._MIN_LINE_LEN -= 1 # accept smaller lines
             except ValueError:
                 self.idColumn = 0
 
@@ -596,14 +606,14 @@ class Pysheet:
                     line = iterator.next()
                     line_len = len(line)
                     # skip blanks and comments
-                    if line_len < max(self.MIN_LINE_LEN, 1) or str(
-                            line[0]).startswith(self.COMMENT_CHAR):
+                    if line_len < max(self._MIN_LINE_LEN, 1) or str(
+                            line[0]).startswith(self._COMMENT_CHAR):
                         continue
                     if line_len < max_line_len:
-                        line = line + [self.BLANK_VALUE] * (max_line_len - line_len)
+                        line = line + [self._BLANK_VALUE] * (max_line_len - line_len)
                     elif line_len > max_line_len: # we need to adjust all previous lines..
                         for i in range(len(cols)):
-                            cols[i] += [self.BLANK_VALUE] * (line_len - max_line_len)
+                            cols[i] += [self._BLANK_VALUE] * (line_len - max_line_len)
                         max_line_len = line_len
                     cols.append(line)
             except StopIteration:
@@ -620,7 +630,7 @@ class Pysheet:
                 line = iterator.next()
                 line_len = len(line) - skipColR
                 # skip blank, short lines and comments
-                if line_len < max(self.MIN_LINE_LEN, 1) or str(line[0]).startswith(self.COMMENT_CHAR):
+                if line_len < max(self._MIN_LINE_LEN, 1) or str(line[0]).startswith(self._COMMENT_CHAR):
                     continue
                 # header row
                 if row == 0:
@@ -631,19 +641,19 @@ class Pysheet:
                     # load headers
                     if noHeader:
                         if rstack:
-                            self._rows[self.HEADERS_ID] = ["C%03d" % (col+1) for col in range(
+                            self._rows[self._HEADERS_ID] = ["C%03d" % (col+1) for col in range(
                                 head_len)]
                         else: # else add the object's unique id
-                            self._rows[self.HEADERS_ID] = ["C%03d%s" % (
+                            self._rows[self._HEADERS_ID] = ["C%03d%s" % (
                                 col+1, self._objid) for col in range(head_len)]
                         row+=1 # so that this line gets added below
                     else:
                         # replace blank headers by V00i
-                        self._rows[self.HEADERS_ID] = [str(line[i]).strip() if str(
+                        self._rows[self._HEADERS_ID] = [str(line[i]).strip() if str(
                             line[i]).strip() else "V%03d" % i for i in range(len(line))]
                     # did they request auto ids?
                     if self.idColumn == -1:
-                        self._rows[self.HEADERS_ID].append(self.AUTO_ID_HEADER)
+                        self._rows[self._HEADERS_ID].append(self._AUTO_ID_HEADER)
                 # rest or rows
                 if row > 0:
                     thisline = []
@@ -656,7 +666,7 @@ class Pysheet:
                         line_len = head_len
                     elif line_len < head_len:
                         while line_len < head_len:
-                            thisline.append(self.BLANK_VALUE)
+                            thisline.append(self._BLANK_VALUE)
                             line_len += 1
                     if self.idColumn == -1: # auto-generate ids!
                         if cstack:
@@ -701,7 +711,7 @@ class Pysheet:
     def clear(self):
         """clears the object"""
         self._rows = OrderedDict()
-        self._rows[self.HEADERS_ID] = ["ID"]
+        self._rows[self._HEADERS_ID] = ["ID"]
 
     def __iter__(self):
         """returns an iterator over the ID:row items in the csv"""
@@ -725,7 +735,7 @@ class Pysheet:
         exclude=True skips rows with a non-blank __exclude__ column
         lockedRows=True also returns rows whose ID starts with '__'"""
         return [self[x][self.idColumn] for x in self._rows.keys() if (
-            headers or x != self.HEADERS_ID) and (lockedRows or not x.startswith('__')) and (
+            headers or x != self._HEADERS_ID) and (lockedRows or not x.startswith('__')) and (
                 not exclude or not self.excluded(x))]
 
     def getIds(self):
@@ -745,7 +755,7 @@ class Pysheet:
 
     def __setitem__(self, key, row):
         """changes the row of an ID in the dictionary"""
-        if key != self.HEADERS_ID and row[self.idColumn] and clean(
+        if key != self._HEADERS_ID and row[self.idColumn] and clean(
                 row[self.idColumn]) != clean(key):
             raise PysheetException("Key inconsistency: %s %s" % (
                 clean(row[self.idColumn]), clean(key))) # keep key consistency
@@ -789,7 +799,7 @@ class Pysheet:
         if index:
             ret = range(len(self))
         else:
-            ret = self[self.HEADERS_ID]
+            ret = self[self._HEADERS_ID]
         if not idCol:
             del ret[self.idColumn]
         return ret
@@ -798,14 +808,14 @@ class Pysheet:
         """True if header exists in the csv header list"""
         return self.headerIndex(header) > -1
 
-    def addCell(self, key, header=None, value=None, mode='overwrite'):
+    def addCell(self, key, header=None, value=None, mode='overwrite', collapse=';'):
         """adds a single cell in the dictionary. mode can be 'smart_append'
         (adds a value if not already present), 'append', 'overwrite' and
         'add' (performs plus operation if values are numeric)"""
 
         cleankey = clean(sanitize(key))
         if self[cleankey] == None:
-            self[cleankey] = [key.strip()] + [self.BLANK_VALUE] * (len(self)-1)
+            self[cleankey] = [key.strip()] + [self._BLANK_VALUE] * (len(self)-1)
         if header != None:
             header = header.strip()
             if self.headerIndex(header) == -1: # add the header
@@ -815,7 +825,7 @@ class Pysheet:
                     self.getHeaders().append(header)
                     self.expand()
             if value == None:
-                value = self.BLANK_VALUE
+                value = self._BLANK_VALUE
             # add the value using the correct mode
             self[cleankey][self.headerIndex(header)] = self.mergedValue(
                     self[cleankey][self.headerIndex(header)], value, mode=mode)
@@ -829,7 +839,7 @@ class Pysheet:
                 header = header.strip()
                 if self.headerIndex(header) != -1: # header exists
                     ret = self[cleankey][self.headerIndex(header)]
-                    self[cleankey][self.headerIndex(header)] = self.BLANK_VALUE
+                    self[cleankey][self.headerIndex(header)] = self._BLANK_VALUE
             else:
                 ret = self[cleankey]
                 del self[cleankey]
@@ -837,7 +847,7 @@ class Pysheet:
 
     def insertColumn(self, header, index=None, init=None):
         """inserts a blank column in the dictionary at index (default=1)
-        initializes with self.BLANK_VALUE"""
+        initializes with self._BLANK_VALUE"""
         header = str(header)
         if not header.lower().replace('__','') in [
                 l.lower().replace('__','') for l in self.getHeaders()]:
@@ -851,12 +861,12 @@ class Pysheet:
                         self), "index is not in a valid range [%d-%d]: %d" % (0, len(self), index)
 
             for k in self._rows.keys():
-                if k == self.HEADERS_ID:
+                if k == self._HEADERS_ID:
                     if not header.strip().startswith('__'):
                         header = '__'+header.strip()
                     self[k].insert(index,header)
                 else:
-                    self[k].insert(index,self.BLANK_VALUE if not init else init)
+                    self[k].insert(index,self._BLANK_VALUE if not init else init)
             # did we insert before the idColumn?
             if index <= self.idColumn:
                 self.idColumn += 1
@@ -893,7 +903,7 @@ class Pysheet:
         """merges two Pysheets together"""
         # see if it is a pysheet
         try:
-            other.HEADERS_ID
+            other._HEADERS_ID
         except:
             try:
                 other = Pysheet(iterable=other) # if we have an iterable, make a Pysheet on the fly
@@ -907,8 +917,8 @@ class Pysheet:
         merged = False
         for i in self._rows.keys():
             # check for headers row
-            if i == self.HEADERS_ID:
-                item = other.pop(other.HEADERS_ID)
+            if i == self._HEADERS_ID:
+                item = other.pop(other._HEADERS_ID)
             else: # pops item i or None if not found
                 item = other.pop(i,None)
             if item != None and isList(item) and len(item) > 0:
@@ -916,7 +926,7 @@ class Pysheet:
                 merged = True # merged at least one thing
         # loop through the rest of the IDs, blank-padding to the left
         for i in other._rows.keys():
-            self[i] = [self.BLANK_VALUE] * oldlen + other[i]
+            self[i] = [self._BLANK_VALUE] * oldlen + other[i]
             merged = True
         # make it sqare again
         self.expand()
@@ -930,9 +940,9 @@ class Pysheet:
 
     def excluded(self, key):
         """returns True if an item's exclusion header is non-blank"""
-        if key == self.HEADERS_ID:
+        if key == self._HEADERS_ID:
             return False
-        return not self.isBlank(self.grab(key=key, header=self.EXCLUDE_HEADER))
+        return not self.isBlank(self.grab(key=key, header=self._EXCLUDE_HEADER))
 
     def parseColumns(self, cols):
         """parses the input column specification. For example expands ["5","1-3","Age>13"]
@@ -1030,7 +1040,7 @@ class Pysheet:
         ret = []
         for i in self._rows.keys():
             hybrid = []
-            if i == self.HEADERS_ID or (exclude and self.excluded(i)):
+            if i == self._HEADERS_ID or (exclude and self.excluded(i)):
                 continue
             for j in range(len(cols[0])): # add in the columns that we want
                 if not cols[1][j] or not cols[2][j] or (
@@ -1041,8 +1051,8 @@ class Pysheet:
                         cols[1][j] == '!' and (tryNumber(self[i][cols[0][j]]) != cols[2][j])):
                     hybrid.append(self[i][cols[0][j]])
                 else:
-                    hybrid.append(self.BLANK_VALUE)
-            if not blanks and self.BLANK_VALUE in hybrid:
+                    hybrid.append(self._BLANK_VALUE)
+            if not blanks and self._BLANK_VALUE in hybrid:
                 continue
             ret.append([self[i][self.idColumn], "_".join([str(
                 x) for x in hybrid if not self.isBlank(x)])]) # append the ID and a join of the requested columns
@@ -1063,8 +1073,8 @@ class Pysheet:
         # check if we have columns to return
         if not extrct[0]: # return all columns
             all_header_ind = range(self.idColumn) + range(self.idColumn+1, len(self))
-            extrct = [all_header_ind, [self.BLANK_VALUE]*len(all_header_ind), [
-                self.BLANK_VALUE]*len(all_header_ind)]
+            extrct = [all_header_ind, [self._BLANK_VALUE]*len(all_header_ind), [
+                self._BLANK_VALUE]*len(all_header_ind)]
 
         # case we have some columns to return
         ret = []
@@ -1074,7 +1084,7 @@ class Pysheet:
             add = [] # initialize the row to be appended
             for j in range(len(extrct[0])):
                 # add in the columns that we want (loops through column idices)
-                if i == self.HEADERS_ID: # add operator to the name of the header!
+                if i == self._HEADERS_ID: # add operator to the name of the header!
                     if not extrct[2][j]:
                         add.append(self[i][extrct[0][j]])
                     else:
@@ -1106,13 +1116,13 @@ class Pysheet:
                         except TypeError:
                             add.append(str(self[i][extrct[0][j]])+str(extrct[2][j]))
                     else:
-                        add.append(self.FLAG_VALUE) # add blank to the new row
-            if i == self.HEADERS_ID: # prepend
+                        add.append(self._FLAG_VALUE) # add blank to the new row
+            if i == self._HEADERS_ID: # prepend
                 ret = [[self[i][self.idColumn]] + [x.replace('__','') for x in add]] + ret
-            elif self.FLAG_VALUE in add:
+            elif self._FLAG_VALUE in add:
                 pass # skip this row
             # if all values there, append to return
-            elif blanks or not (any(j in add for j in [None, [], '', self.BLANK_VALUE])):
+            elif blanks or not (any(j in add for j in [None, [], '', self._BLANK_VALUE])):
                 ret.append([self[i][self.idColumn]] + add)
         return ret
 
@@ -1124,7 +1134,7 @@ class Pysheet:
             assert thislen <= headlen, ("Error in row %s. Greater than length "
             "of headers row (%d): %d") % (i, headlen, len(self[i]))
             if thislen < headlen:
-                self[i] += [self.BLANK_VALUE] * (headlen - thislen)
+                self[i] += [self._BLANK_VALUE] * (headlen - thislen)
 
     def contract(self, mode='overwrite'):
         """concatenates columns that have the same header. mode can be:
@@ -1139,7 +1149,7 @@ class Pysheet:
                     deleteme.append(j)
                     # copy over new values
                     for k in self._rows.keys():
-                        if k != self.HEADERS_ID: # skip headers
+                        if k != self._HEADERS_ID: # skip headers
                             if i == self.idColumn: # if merging IDs also use overwrite
                                 self[k][i] = self.mergedValue(self[k][i], self[k][j], mode='overwrite')
                                 self.rename(self[k][i], key=k) # re-index just in case
@@ -1153,12 +1163,12 @@ class Pysheet:
         """fills blank cells with zero"""
         for k in self._rows.keys():
             for h in range(len(self[k])):
-                if self[k][h] in [None, [], '', self.BLANK_VALUE]:
+                if self[k][h] in [None, [], '', self._BLANK_VALUE]:
                     self[k][h]=zero
 
     def getColumnsWithBlanks(self):
         """returns indices of columns containing blank values"""
-        return self.getColumnsContaining([None, [], '', self.BLANK_VALUE])
+        return self.getColumnsContaining([None, [], '', self._BLANK_VALUE])
     def getColumnsContaining(self, items):
         """returns indices of columns contains anything in list of items"""
         return unique([h for k in self.getIds() for h in self.getHeaders(
@@ -1166,7 +1176,7 @@ class Pysheet:
 
     def getRowsWithBlanks(self):
         """returns IDs of rows containing blank values"""
-        return self.getRowsContaining([None, [], '', self.BLANK_VALUE])
+        return self.getRowsContaining([None, [], '', self._BLANK_VALUE])
     def getRowsContaining(self, items):
         """returns IDs of columns containing anything in list of items"""
         return unique([k for k in self.getIds() for h in self.getHeaders(
@@ -1209,7 +1219,7 @@ class Pysheet:
                 self.getHeaders()[hi] = str(newName).strip()
             else:
                 raise PysheetException("Cannot rename. No such header: %s" % header)
-        elif key and key != self.HEADERS_ID:
+        elif key and key != self._HEADERS_ID:
             cleanKey = clean(sanitize(key))
             cleanNewKey = clean(sanitize(newName))
             row = self[cleanKey]
@@ -1288,11 +1298,11 @@ class Pysheet:
         else: # merge
             if mode == 'smart_append':
                 if not self.isBlank(cellB) and not str(cellB) in str(
-                        cellA).split(self.APPEND_CHAR): # if not already in there
-                    return "%s%s%s" % (cellA, self.APPEND_CHAR, cellB)
+                        cellA).split(self._COLLAPSE): # if not already in there
+                    return "%s%s%s" % (cellA, self._COLLAPSE, cellB)
             elif mode == 'append':
                 if not self.isBlank(cellB): # just append
-                    return "%s%s%s" % (cellA, self.APPEND_CHAR, cellB)
+                    return "%s%s%s" % (cellA, self._COLLAPSE, cellB)
             elif mode == 'overwrite': # just copy on top
                 if not self.isBlank(cellB):
                     return cellB
@@ -1356,7 +1366,7 @@ class Pysheet:
         skipAutoIDColumn = -1
         ret = []
         # check for Auto IDs
-        if self._rows[self.HEADERS_ID][self.idColumn] == self.AUTO_ID_HEADER:
+        if self._rows[self._HEADERS_ID][self.idColumn] == self._AUTO_ID_HEADER:
             skipAutoID = True # don't print auto ids!
             skipAutoIDColumn = self.idColumn
             if skipAutoIDColumn < 0:
@@ -1366,10 +1376,10 @@ class Pysheet:
         # set the header row on top first
         if saveHeaders:
             if skipAutoID:
-                header = self._rows[self.HEADERS_ID][:self.idColumn] + self._rows[
-                        self.HEADERS_ID][(self.idColumn+1):]
+                header = self._rows[self._HEADERS_ID][:self.idColumn] + self._rows[
+                        self._HEADERS_ID][(self.idColumn+1):]
             else:
-                header = self._rows[self.HEADERS_ID]
+                header = self._rows[self._HEADERS_ID]
             if replaceHeaders and len(replaceHeaders) != len(header):
                 raise PysheetException(("Output headers given do not match number of "
                 "output columns (%d)!\n%s") % (len(header), flatten(replaceHeaders, ", ")))
@@ -1378,7 +1388,7 @@ class Pysheet:
             ret = [header]
         # now the content
         for k in keys:
-            if k == self.HEADERS_ID:
+            if k == self._HEADERS_ID:
                 continue
             row = self._rows[k]
             line = []
@@ -1410,7 +1420,7 @@ class Pysheet:
         if isList(cell):
             return reduce(lambda a,b: self.isBlank(a) and self.isBlank(b), cell)
             #len(filter((lambda i : not self.isBlank(i)) for i in cell)) == 0
-        if cell in [None, '', self.BLANK_VALUE]:
+        if cell in [None, '', self._BLANK_VALUE]:
             return True
         return False
 
@@ -1424,11 +1434,11 @@ class Pysheet:
             return "* module 'Texttable' is required to print stuff *\n"
         header = [[x.replace('__','') for x in self.getHeaders()]]
         ids = self.getIds()
-        if self._rows[self.HEADERS_ID][self.idColumn] != self.AUTO_ID_HEADER:
+        if self._rows[self._HEADERS_ID][self.idColumn] != self._AUTO_ID_HEADER:
             ids.sort() # sort only if non-Auto IDs
         table = [self[i] for i in ids]
         table = header + table
-        ttable = Texttable()#self.MAX_PRINT_WIDTH)
+        ttable = Texttable()#self._MAX_PRINT_WIDTH)
         ttable.set_deco(Texttable.HEADER | Texttable.VLINES)
         ttable.add_rows(table)
         try:
@@ -1480,6 +1490,20 @@ def yesNo(f):
     else:
         raise argparse.ArgumentTypeError("Value must be one of y|yes|true|1|n|no|false|0, not %s" % f)
     return f
+
+def collapseMode(f):
+    """type for argparse - parses consolidation mode string"""
+    choices = ['append','overwrite','add','smart_append']
+    if any([f.lower().startswith(x) for x in choices]):
+        mode = f.split('-', 1)
+        collapse = ';'
+        try:
+            collapse = mode[1]
+        except IndexError:
+            pass
+    else:
+        raise argparse.ArgumentTypeError("Must choose one of %s, not %s" % (choices, f))
+    return (mode[0].lower(), collapse)
 
 def flatten(l, delim=" "):
     """converts an array to string with a delimiter in between items"""
