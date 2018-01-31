@@ -131,9 +131,10 @@ Examples:
             metavar="HEADER KEYWORD1 KEYWORD2 etc", help="Consolidate and remove consolitated columns *")
     groupC.add_argument('--mode', '-e', nargs='?',
             type=collapseMode, default=['smart_append', ';'],
-            metavar="append|overwrite|add", help="Consolidation mode for cells with same header "
-            "and row id. One of: append (old_value;new_value), overwrite, or add "
-            "(numerical addition). Default is 'smart_append-;' (append only if value is "
+            metavar="append|overwrite|add|mean", help="Consolidation mode for cells with same header "
+            "and row id. One of: append (old_value;new_value), overwrite, add "
+            "(numerical addition) or mean (average of numerical values). "
+            "Default is 'smart_append-;' (append only if value is "
             "not already present, use ';' as append delimiter)")
 
     groupQ = parser.add_argument_group('Query')
@@ -1290,7 +1291,7 @@ class Pysheet:
         'overwrite' and 'add' (adds up values if numeric)"""
         # check more
         mode = mode.lower()
-        if mode not in ['smart_append','append','overwrite','add']:
+        if mode not in ['smart_append','append','overwrite','add','mean']:
             raise PysheetException("Merge mode '%s' is invalid!" % mode)
 
         if self.isBlank(cellA): # clean copy
@@ -1312,6 +1313,37 @@ class Pysheet:
                         return tryNumber(cellA) + tryNumber(cellB)
                     else:
                         return tryNumber(cellB)
+            elif mode == 'mean':
+                # if either cell is blank, we just return one
+                if self.isBlank(cellB) or self.isBlank(cellA):
+                    if not self.isBlank(cellA):
+                        return tryNumber(cellA)
+                    if not self.isBlank(cellB):
+                        return tryNumber(cellB)
+                ispercentage = False
+                if cellA[-1] == "%":
+                    ispercentage = True
+                    cellA_processed = tryNumber(cellA[:-1])
+                else:
+                    cellA_processed = tryNumber(cellA)
+                if cellB[-1] == "%":
+                    ispercentage = True
+                    cellB_processed = tryNumber(cellB[:-1])
+                else:
+                    cellB_processed = tryNumber(cellB)
+                try:
+                    aggregated = (cellA_processed + cellB_processed) / 2
+                    if ispercentage:
+                        aggregated = str(aggregated) + "%"
+                    return aggregated
+                # if it all goes wrong, do our best to return something sensible
+                except:
+                    if ispercentage:
+                        cellA_processed + "%" + cellB_processed + "%"
+                    else:
+                        cellA_processed + cellB_processed
+
+
         return cellA # default is the existing value remains
 
     def levels(self, column, hasHeader=False):
@@ -1493,7 +1525,7 @@ def yesNo(f):
 
 def collapseMode(f):
     """type for argparse - parses consolidation mode string"""
-    choices = ['append','overwrite','add','smart_append']
+    choices = ['append','overwrite','add','smart_append','mean']
     if any([f.lower().startswith(x) for x in choices]):
         mode = f.split('-', 1)
         collapse = ';'
