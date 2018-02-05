@@ -1321,27 +1321,28 @@ class Pysheet:
                     if not self.isBlank(cellB):
                         return tryNumber(cellB)
                 ispercentage = False
-                if cellA[-1] == "%":
+                if isinstance(cellA, basestring) and cellA[-1] == "%":
                     ispercentage = True
                     cellA_processed = tryNumber(cellA[:-1])
                 else:
                     cellA_processed = tryNumber(cellA)
-                if cellB[-1] == "%":
+                if isinstance(cellB, basestring) and cellB[-1] == "%":
                     ispercentage = True
                     cellB_processed = tryNumber(cellB[:-1])
                 else:
                     cellB_processed = tryNumber(cellB)
                 try:
-                    aggregated = (cellA_processed + cellB_processed) / 2
+                    # add float here to prevent python rounding off the divide
+                    aggregated = (float(cellA_processed) + float(cellB_processed)) / 2
                     if ispercentage:
                         aggregated = str(aggregated) + "%"
                     return aggregated
                 # if it all goes wrong, do our best to return something sensible
                 except:
                     if ispercentage:
-                        cellA_processed + "%" + cellB_processed + "%"
+                        return "%s%%;%s%%" % (cellA_processed, cellB_processed)
                     else:
-                        cellA_processed + cellB_processed
+                        return "%s;%s" % (cellA_processed, cellB_processed)
 
 
         return cellA # default is the existing value remains
