@@ -10,11 +10,11 @@ def read(*paths):
 setup(
     name='pysheet',
     packages=['pysheet'],
-    version='0.3.13',
+    version='0.3.14',
     description='Read, write and manipulate delimited text files',
     long_description=(read('README.rst')),
     url='https://github.com/isthisthat/Pysheet',
-    download_url='https://github.com/isthisthat/Pysheet/archive/0.3.13.tar.gz',
+    download_url='https://github.com/isthisthat/Pysheet/archive/0.3.14.tar.gz',
     license='LGPL',
     author='Stathis Kanterakis',
     author_email='me@stathiskanterakis.com',
