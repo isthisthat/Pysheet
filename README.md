@@ -1,4 +1,6 @@
 # Pysheet README
+[![Build Status](https://travis-ci.org/isthisthat/Pysheet.svg?branch=master)](https://travis-ci.org/isthisthat/Pysheet)
+
 ## Overview
 Now on [pypi](https://pypi.python.org/pypi/pysheet)!
 Pysheet is your best companion for data management. It can read and write to a delimited text file (spreadsheet), consolidate columns and merge spreadsheets together. It allows you to query for information thus turning your text file into a lightweight database. It can be used both as a python library (`from pysheet import Pysheet`) and as a command-line tool (`pysheet -h`) and supports concurrent access control for reading/writing to the same file in parallel.
@@ -437,6 +439,7 @@ Available at [Pysheet.html](http://htmlpreview.github.io/?https://github.com/ist
 ### v3.14
 * Added `mean` as a column consolidation option (thanks @psaffrey-illumina)
 * Added support for percentage numeric representations (ending with `%`)
+* Added [Travis CI](https://travis-ci.org/isthisthat/Pysheet)
 
 ### v3.13
 * Added NONE as a keyword for adding cells
