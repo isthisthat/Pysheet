@@ -318,7 +318,7 @@ Pasted below:
                       [--lockFile [LOCKFILE]]
                       [--consolidate [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]]
                       [--clean [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]]
-                      [--mode [append|overwrite|add]]
+                      [--mode [append|overwrite|add|mean]]
                       [--columns [COLUMNS [COLUMNS ...]]]
                       [--query [QUERY [QUERY ...]]] [--printHeaders] [--version]
                       [--verbose]
@@ -381,12 +381,13 @@ Pasted below:
                             Consolidate columns according to keywords *
       --clean [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]], -C [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]
                             Consolidate and remove consolitated columns *
-      --mode [append|overwrite|add], -e [append|overwrite|add]
+      --mode [append|overwrite|add|mean], -e [append|overwrite|add|mean]
                             Consolidation mode for cells with same header and row
                             id. One of: append (old_value;new_value), overwrite,
-                            or add (numerical addition). Default is
-                            'smart_append-;' (append only if value is not already
-                            present, use ';' as append delimiter)
+                            add (numerical addition) or mean (average of numerical
+                            values). Default is 'smart_append-;' (append only if
+                            value is not already present, use ';' as append
+                            delimiter)
     
     Query:
       --columns [COLUMNS [COLUMNS ...]], -k [COLUMNS [COLUMNS ...]]
