@@ -36,6 +36,9 @@ PROFILE_LIMIT = 0.1 # %
 PROFILE_DAT = 'profile.dat'
 PROFILE_TXT = 'profile.txt'
 
+# global
+_COLLAPSE_CHOICES = ['append','overwrite','add','smart_append','mean']
+
 ####################################
 ########### CLI WRAPPER ############
 ####################################
@@ -1288,10 +1291,10 @@ class Pysheet:
     def mergedValue(self, cellA, cellB, mode='smart_append'):
         """returns the merged value of two cells, according to mode:
         'smart_append' (appends new value if not already present), 'append',
-        'overwrite' and 'add' (adds up values if numeric)"""
+        'overwrite', 'add' (adds up values if numeric) or 'mean' (numeric average)"""
         # check more
         mode = mode.lower()
-        if mode not in ['smart_append','append','overwrite','add','mean']:
+        if mode not in _COLLAPSE_CHOICES:
             raise PysheetException("Merge mode '%s' is invalid!" % mode)
 
         if self.isBlank(cellA): # clean copy
@@ -1514,8 +1517,7 @@ def yesNo(f):
 
 def collapseMode(f):
     """type for argparse - parses consolidation mode string"""
-    choices = ['append','overwrite','add','smart_append','mean']
-    if any([f.lower().startswith(x) for x in choices]):
+    if any([f.lower().startswith(x) for x in _COLLAPSE_CHOICES]):
         mode = f.split('-', 1)
         collapse = ';'
         try:

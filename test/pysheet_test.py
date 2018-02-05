@@ -5,7 +5,7 @@ from subprocess import call, check_output, Popen, PIPE, STDOUT
 from time import sleep
 
 PYSHEET_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.append(PYSHEET_DIR)
+sys.path.insert(0, PYSHEET_DIR)
 from pysheet.pysheet import Pysheet, PysheetException
 
 class TestFunctions(unittest.TestCase):
