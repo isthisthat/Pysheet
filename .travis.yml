@@ -5,3 +5,5 @@ install:
     - pip install -r requirements.txt
 script:
     - test/pysheet_test.py
+notifications:
+      email: false
