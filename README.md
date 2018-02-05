@@ -6,12 +6,12 @@ Pysheet is your best companion for data management. It can read and write to a d
 ## Quick Start
 1. Install using pip:
 
-`pip install pysheet`
+    pip install pysheet
 
 3. Try the following commands:
 
-`pysheet -o helloworld.csv --write 1 A Pysheet 2 B your 3 C best 4 D companion 5 E to 6 F Excel -v`
-`pysheet -d helloworld.csv --columns 4 2 1 3 5 6`
+    pysheet -o helloworld.csv --write 1 A Pysheet 2 B your 3 C best 4 D companion 5 E to 6 F Excel -v
+    pysheet -d helloworld.csv --columns 4 2 1 3 5 6
 
 Output:
 
@@ -318,7 +318,7 @@ Pasted below:
                       [--lockFile [LOCKFILE]]
                       [--consolidate [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]]
                       [--clean [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]]
-                      [--mode [append|overwrite|add]]
+                      [--mode [append|overwrite|add|mean]]
                       [--columns [COLUMNS [COLUMNS ...]]]
                       [--query [QUERY [QUERY ...]]] [--printHeaders] [--version]
                       [--verbose]
@@ -381,12 +381,13 @@ Pasted below:
                             Consolidate columns according to keywords *
       --clean [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]], -C [HEADER KEYWORD1 KEYWORD2 etc [HEADER KEYWORD1 KEYWORD2 etc ...]]
                             Consolidate and remove consolitated columns *
-      --mode [append|overwrite|add], -e [append|overwrite|add]
+      --mode [append|overwrite|add|mean], -e [append|overwrite|add|mean]
                             Consolidation mode for cells with same header and row
                             id. One of: append (old_value;new_value), overwrite,
-                            or add (numerical addition). Default is
-                            'smart_append-;' (append only if value is not already
-                            present, use ';' as append delimiter)
+                            add (numerical addition) or mean (average of numerical
+                            values). Default is 'smart_append-;' (append only if
+                            value is not already present, use ';' as append
+                            delimiter)
     
     Query:
       --columns [COLUMNS [COLUMNS ...]], -k [COLUMNS [COLUMNS ...]]
@@ -433,23 +434,27 @@ Available at [Pysheet.html](http://htmlpreview.github.io/?https://github.com/ist
 
 ## Changelog
 
+### v3.14
+* Added `mean` as a column consolidation option (thanks @psaffrey-illumina)
+* Added support for percentage numeric representations (ending with `%`)
+
 ### v3.13
 * Added NONE as a keyword for adding cells
-* Added ability to specify collapse string in mode
+* Added ability to specify collapse delimiter in mode
 
 ### v3.12
 * Added setCell function that correctly updates dictionary keys if updating the ID column
 
 ### v3.11
-* Added options --removeMissingRows and --removeMissingColumns to remove rows/columns containing blank values
+* Added options `--removeMissingRows` and `--removeMissingColumns` to remove rows/columns containing blank values
 * Now accepts blank headers and replaces them with V00i where i is the index of the blank header
 
 ### v3.10
-* Added option --outFname to output filename as column. Useful when merging files
+* Added option `--outFname` to output filename as column. Useful when merging files
 
 ### v3.9
 * Sorts output in natural order ([natsort](https://pypi.python.org/pypi/natsort))
-* Added option --skipCol to skip columns from the right of files
+* Added option `--skipCol` to skip columns from the right of files
 
 ### v3.8
 * Now detects input delimiter automatically

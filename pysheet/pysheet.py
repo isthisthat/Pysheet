@@ -6,7 +6,7 @@ A library to read, write and manipulate delimited text files
 Copyright (c) 2014-2018, Stathis Kanterakis
 """
 
-__version__ = "3.13"
+__version__ = "3.14"
 __author__  = "Stathis Kanterakis"
 __license__ = "LGPL"
 
@@ -131,9 +131,10 @@ Examples:
             metavar="HEADER KEYWORD1 KEYWORD2 etc", help="Consolidate and remove consolitated columns *")
     groupC.add_argument('--mode', '-e', nargs='?',
             type=collapseMode, default=['smart_append', ';'],
-            metavar="append|overwrite|add", help="Consolidation mode for cells with same header "
-            "and row id. One of: append (old_value;new_value), overwrite, or add "
-            "(numerical addition). Default is 'smart_append-;' (append only if value is "
+            metavar="append|overwrite|add|mean", help="Consolidation mode for cells with same header "
+            "and row id. One of: append (old_value;new_value), overwrite, add "
+            "(numerical addition) or mean (average of numerical values). "
+            "Default is 'smart_append-;' (append only if value is "
             "not already present, use ';' as append delimiter)")
 
     groupQ = parser.add_argument_group('Query')
@@ -1290,7 +1291,7 @@ class Pysheet:
         'overwrite' and 'add' (adds up values if numeric)"""
         # check more
         mode = mode.lower()
-        if mode not in ['smart_append','append','overwrite','add']:
+        if mode not in ['smart_append','append','overwrite','add','mean']:
             raise PysheetException("Merge mode '%s' is invalid!" % mode)
 
         if self.isBlank(cellA): # clean copy
@@ -1306,12 +1307,32 @@ class Pysheet:
             elif mode == 'overwrite': # just copy on top
                 if not self.isBlank(cellB):
                     return cellB
-            elif mode == 'add': # try to do numeric addition
+            elif mode in ['add', 'mean']: # numerical operations
                 if not self.isBlank(cellB):
-                    if not self.isBlank(cellA):
-                        return tryNumber(cellA) + tryNumber(cellB)
-                    else:
-                        return tryNumber(cellB)
+                    # check for % sign
+                    ispercentage = False
+                    cellA_processed = tryNumber(cellA)
+                    cellB_processed = tryNumber(cellB)
+                    try:
+                        if cellA.endswith("%") and cellB.endswith("%"):
+                            ispercentage = True
+                            cellA_processed = tryNumber(cellA[:-1])
+                            cellB_processed = tryNumber(cellB[:-1])
+                    except AttributeError:
+                        pass # cells are integers
+                    try:
+                        if mode == 'add': # try to do numeric addition
+                            aggregated = cellA_processed + cellB_processed
+                        elif mode == 'mean':
+                            # add float here to prevent python rounding off the divide
+                            aggregated = (float(cellA_processed) + float(cellB_processed)) / 2
+                        if ispercentage:
+                            aggregated = str(aggregated) + "%"
+                        return aggregated
+                    # if something goes wrong, default to append
+                    except (TypeError, ValueError) as e:
+                        return "%s%s%s" % (cellA, self._COLLAPSE, cellB)
+
         return cellA # default is the existing value remains
 
     def levels(self, column, hasHeader=False):
@@ -1493,7 +1514,7 @@ def yesNo(f):
 
 def collapseMode(f):
     """type for argparse - parses consolidation mode string"""
-    choices = ['append','overwrite','add','smart_append']
+    choices = ['append','overwrite','add','smart_append','mean']
     if any([f.lower().startswith(x) for x in choices]):
         mode = f.split('-', 1)
         collapse = ';'
