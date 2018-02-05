@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import unittest, os
-from pysheet import Pysheet, PysheetException
+from pysheet.pysheet import Pysheet, PysheetException
 from subprocess import call, check_output, Popen, PIPE, STDOUT
 from time import sleep
 
@@ -80,44 +80,50 @@ class TestFunctions(unittest.TestCase):
     self.assertEqual(p.grab(99,"h"),'-1;-1')
     p.removeCell(88,header="h")
     self.assertEqual(p[88],[88, '', ''])
+    p = Pysheet(iterable=self.table)
+    p.consolidate("h",mode='mean')
+    self.assertEqual(p.grab(88,"h"),8)
+    p.addCell('%','%','1%')
+    p.addCell('%','%%','0.1%')
+    p.consolidate("%",mode='mean',cleanUp=True)
+    self.assertEqual(p.grab('%','%'),'0.55%')
+    p.addCell('%','H1','foo')
+    p._COLLAPSE='|'
+    p.consolidate(["bar","%","h"],mode='mean')
+    self.assertEqual(p.grab('%','bar'),'foo|0.55%')
     
   def test_example(self):
     # get the directories right
     test_dir = os.path.dirname(os.path.realpath(__file__))
-    pysheet = os.path.join(test_dir, "..", "pysheet.py")
+    pysheet = os.path.join(test_dir, "..", "pysheet", "pysheet.py")
     cgc = os.path.join(test_dir, "cancer.tsv")
     ortho = os.path.join(test_dir, "ortho.txt")
     test = os.path.join(test_dir, "test.csv")
     test_lock = os.path.join(test_dir, "test.csv.lock")
 
-    out = [\
-'Human Gene |  ZFIN ID   |    ZFIN    |   Entrez   |   Entrez   |    V005    \n',
-'  Symbol   |            |   Symbol   | Zebrafish  | Human Gene |            \n',
-'           |            |            |  Gene ID   |     ID     |            \n',
-'===========+============+============+============+============+===========\n',
-'ABCA12     | ZDB-GENE-0 | abca12     | 558335     | 26154      |            \n',
-'           | 30131-9790 |            |            |            |            \n'\
+    out = [
+' Human Gene   |   ZFIN ID    | ZFIN Symbol  |    Entrez    | Entrez Human | V005\n',
+'   Symbol     |              |              |  Zebrafish   |   Gene ID    |     \n',
+'              |              |              |   Gene ID    |              |     \n',
+'==============+==============+==============+==============+==============+=====\n',
+'ABCA12        | ZDB-GENE-030 | abca12       | 558335       | 26154        |     \n',
+'              | 131-9790     |              |              |              |     \n'
 ]
     cmd = "%s -d %s -i3 -D\\t -k ALL" % (pysheet, ortho)
     p = Popen(cmd.split(), stdout=PIPE)
     myout = p.stdout.readlines()
     self.assertEqual(myout[:6], out)
 
-    out = [\
-'   Symbol    |     Name     |    GeneID    |     Chr      |   Chr Band   \n',
-'=============+==============+==============+==============+=============\n',
-'ABL1         | v-abl        | 25           | 9            | 9q34.1       \n',
-'             | Abelson      |              |              |              \n',
-'             | murine       |              |              |              \n',
-'             | leukemia     |              |              |              \n',
-'             | viral        |              |              |              \n',
-'             | oncogene     |              |              |              \n',
-'             | homolog 1    |              |              |              \n'\
+    out = [
+'  Symbol    |               Name               | GeneID | Chr |     Chr Band    \n',
+'============+==================================+========+=====+=================\n',
+'ABL1        | v-abl Abelson murine leukemia    | 25     | 9   | 9q34.1          \n',
+'            | viral oncogene homolog 1         |        |     |                 \n'
 ]
     cmd = "%s -d %s -k 1-4" % (pysheet, cgc)
     p = Popen(cmd.split(), stdout=PIPE)
     myout = p.stdout.readlines()
-    self.assertEqual(myout[:9], out)
+    self.assertEqual(myout[:4], out)
 
     out = [\
 'CBFA2T3\n',

@@ -6,7 +6,7 @@ A library to read, write and manipulate delimited text files
 Copyright (c) 2014-2018, Stathis Kanterakis
 """
 
-__version__ = "3.13"
+__version__ = "3.14"
 __author__  = "Stathis Kanterakis"
 __license__ = "LGPL"
 
@@ -1307,43 +1307,31 @@ class Pysheet:
             elif mode == 'overwrite': # just copy on top
                 if not self.isBlank(cellB):
                     return cellB
-            elif mode == 'add': # try to do numeric addition
+            elif mode in ['add', 'mean']: # numerical operations
                 if not self.isBlank(cellB):
-                    if not self.isBlank(cellA):
-                        return tryNumber(cellA) + tryNumber(cellB)
-                    else:
-                        return tryNumber(cellB)
-            elif mode == 'mean':
-                # if either cell is blank, we just return one
-                if self.isBlank(cellB) or self.isBlank(cellA):
-                    if not self.isBlank(cellA):
-                        return tryNumber(cellA)
-                    if not self.isBlank(cellB):
-                        return tryNumber(cellB)
-                ispercentage = False
-                if isinstance(cellA, basestring) and cellA[-1] == "%":
-                    ispercentage = True
-                    cellA_processed = tryNumber(cellA[:-1])
-                else:
+                    # check for % sign
+                    ispercentage = False
                     cellA_processed = tryNumber(cellA)
-                if isinstance(cellB, basestring) and cellB[-1] == "%":
-                    ispercentage = True
-                    cellB_processed = tryNumber(cellB[:-1])
-                else:
                     cellB_processed = tryNumber(cellB)
-                try:
-                    # add float here to prevent python rounding off the divide
-                    aggregated = (float(cellA_processed) + float(cellB_processed)) / 2
-                    if ispercentage:
-                        aggregated = str(aggregated) + "%"
-                    return aggregated
-                # if it all goes wrong, do our best to return something sensible
-                except:
-                    if ispercentage:
-                        return "%s%%;%s%%" % (cellA_processed, cellB_processed)
-                    else:
-                        return "%s;%s" % (cellA_processed, cellB_processed)
-
+                    try:
+                        if cellA.endswith("%") and cellB.endswith("%"):
+                            ispercentage = True
+                            cellA_processed = tryNumber(cellA[:-1])
+                            cellB_processed = tryNumber(cellB[:-1])
+                    except AttributeError:
+                        pass # cells are integers
+                    try:
+                        if mode == 'add': # try to do numeric addition
+                            aggregated = cellA_processed + cellB_processed
+                        elif mode == 'mean':
+                            # add float here to prevent python rounding off the divide
+                            aggregated = (float(cellA_processed) + float(cellB_processed)) / 2
+                        if ispercentage:
+                            aggregated = str(aggregated) + "%"
+                        return aggregated
+                    # if something goes wrong, default to append
+                    except (TypeError, ValueError) as e:
+                        return "%s%s%s" % (cellA, self._COLLAPSE, cellB)
 
         return cellA # default is the existing value remains
 
