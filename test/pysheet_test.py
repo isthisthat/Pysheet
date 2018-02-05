@@ -1,19 +1,22 @@
 #!/usr/bin/env python
 
-import unittest, os
-from pysheet.pysheet import Pysheet, PysheetException
+import unittest, os, sys
 from subprocess import call, check_output, Popen, PIPE, STDOUT
 from time import sleep
+
+PYSHEET_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(PYSHEET_DIR)
+from pysheet.pysheet import Pysheet, PysheetException
 
 class TestFunctions(unittest.TestCase):
 
   def setUp(self):
-    self.table = \
-        [["ID","H1","H2","H3"],\
-        [1,"a","b","c"], \
-        [2,"aa","bb","cc"], \
-        [99, "", "", ""], \
-        [88, "", 8, 8]]
+    self.table = [
+            ["ID","H1","H2","H3"],
+            [1,"a","b","c"],
+            [2,"aa","bb","cc"],
+            [99, "", "", ""],
+            [88, "", 8, 8]]
 
   def test_load(self):
     p = Pysheet(iterable=self.table)
@@ -35,12 +38,12 @@ class TestFunctions(unittest.TestCase):
     self.assertEqual(p[3],[3, 'a', 'b', 'c'])
     p = Pysheet(iterable=self.table, trans=True)
     self.assertEqual(p.getHeaders(),['ID', '1', '2', '99', '88'])
-    p = Pysheet(iterable=self.table, trans=True, cstack=True) + \
-            Pysheet(iterable=self.table, cstack=True)
+    p = Pysheet(iterable=self.table, trans=True, cstack=True) + Pysheet(
+            iterable=self.table, cstack=True)
     self.assertEqual(len(p),11)
     self.assertEqual(p.height(),5)
-    p = Pysheet(iterable=self.table, trans=True, rstack=True) + \
-            Pysheet(iterable=self.table, rstack=True)
+    p = Pysheet(iterable=self.table, trans=True, rstack=True) + Pysheet(
+            iterable=self.table, rstack=True)
     p.contract()
     self.assertEqual(len(p),5)
     self.assertEqual(p.height(),9)
@@ -125,20 +128,20 @@ class TestFunctions(unittest.TestCase):
     myout = p.stdout.readlines()
     self.assertEqual(myout[:4], out)
 
-    out = [\
+    out = [
 'CBFA2T3\n',
 'CBFB\n',
 'GMPS\n',
 'HOXA13\n',
 'MYH11\n',
-'NUP98\n'\
+'NUP98\n'
 ]
     cmd = "%s -d %s %s -i 3 0 -D \\t -q" % (pysheet, ortho, cgc)
     p = Popen(cmd.split() + ['ZFIN ID','Tumour Types  (Somatic Mutations)=AML'], stdout=PIPE)
     myout = p.stdout.readlines()
     self.assertEqual(myout, out)
 
-    out = [\
+    out = [
 'CBFA2T3\n',
 'CBFB\n',
 'ERG\n',
@@ -156,7 +159,7 @@ class TestFunctions(unittest.TestCase):
 'NUP98\n',
 'PDGFRB\n',
 'PTPN11\n',
-'RUNX1\n'\
+'RUNX1\n'
 ]
     cmd = "%s -d %s %s -i 3 0 -q" % (pysheet, ortho, cgc)
     p = Popen(cmd.split() + ['ZFIN ID','Tumour Types  (Somatic Mutations)~AML'], stdout=PIPE)
@@ -172,13 +175,13 @@ class TestFunctions(unittest.TestCase):
     p = Popen(cmd.split(), stdout=PIPE)
     p.communicate()
 
-    out = [\
+    out = [
 '0 Human Gene Symbol\n',
 '1 Entrez Human Gene ID\n',
 '2 ZFIN Symbol\n',
 '3 Entrez Zebrafish Gene ID\n',
 '4 Phenotype\n',
-'5 Chr Band\n'\
+'5 Chr Band\n'
 ]
     cmd = "%s -d %s -H" % (pysheet, test)
     p = Popen(cmd.split(), stdout=PIPE)
